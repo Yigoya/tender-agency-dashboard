@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { AgencyRegistration, Agency, Tender, TenderCreate, TenderUpdate, AgencyStatistics } from '../types/api';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'https://hulumoya.zapto.org';
 
 const api = axios.create({
   baseURL: API_URL,
