@@ -1,7 +1,8 @@
 import axios from 'axios';
-import { AgencyRegistration, Agency, Tender, TenderCreate, TenderUpdate, AgencyStatistics } from '../types/api';
+import { AgencyRegistration, Agency, Tender, TenderCreate, TenderUpdate, AgencyStatistics, ServiceCategory } from '../types/api';
 
 const API_URL = 'https://hulumoya.zapto.org';
+// const API_URL = 'http://localhost:5000';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -93,6 +94,11 @@ export const tenderApi = {
   
   delete: (agencyId: number, tenderId: number) =>
     api.delete(`/tender-agencies/${agencyId}/tenders/${tenderId}`),
+};
+
+export const adminApi = {
+  // Fetch all services/categories from admin endpoint
+  getServices: () => api.get<ServiceCategory[]>(`/admin/services`),
 };
 
 export default api;

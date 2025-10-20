@@ -69,3 +69,26 @@ export interface PaginatedResponse<T> {
   size: number;
   number: number;
 }
+
+// Admin Services Types
+export interface ServiceNode {
+  serviceId: number;
+  name: string;
+  description: string | null;
+  estimatedDuration: string | null;
+  serviceFee: number | null;
+  technicianCount: number | null;
+  bookingCount: number | null;
+  icon: string | null;
+  document: string | null;
+  categoryId: number;
+  services: ServiceNode[]; // nested children
+}
+
+export interface ServiceCategory {
+  categoryId: number;
+  categoryName: string;
+  description: string;
+  icon: string | null;
+  services: ServiceNode[];
+}

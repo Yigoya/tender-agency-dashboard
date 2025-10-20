@@ -33,7 +33,8 @@ import { format } from 'date-fns';
 import { Plus, Edit2, Trash2, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchTenders } from '../store/slices/tenderSlice';
-import { tenderApi } from '../services/api';
+import { adminApi, tenderApi } from '../services/api';
+import type { ServiceCategory, ServiceNode } from '../types/api';
 
 const validationSchema = yup.object({
   title: yup.string().required('Title is required'),
@@ -66,12 +67,38 @@ export default function Tenders() {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedTender, setSelectedTender] = useState<number | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [categoryServices, setCategoryServices] = useState<ServiceNode[]>([]);
+  const [flatServices, setFlatServices] = useState<{ node: ServiceNode; depth: number }[]>([]);
+  const flattenServicesTree = (
+    nodes: ServiceNode[],
+    depth = 0
+  ): { node: ServiceNode; depth: number }[] =>
+    nodes.flatMap((n) => [{ node: n, depth }, ...flattenServicesTree(n.services || [], depth + 1)]);
+  const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
     // In production, get the agencyId from auth context/state
     const agencyId = 1;
     dispatch(fetchTenders({ agencyId, page, size: rowsPerPage }));
   }, [dispatch, page, rowsPerPage]);
+
+  useEffect(() => {
+    // Load services from admin endpoint and keep only categoryId = 1
+    const loadServices = async () => {
+      try {
+        const { data } = await adminApi.getServices();
+        const categoryOne = data.find((c) => c.categoryId === 1);
+        if (categoryOne) {
+          setCategoryServices(categoryOne.services || []);
+          setFlatServices(flattenServicesTree(categoryOne.services || []));
+        }
+      } catch (err) {
+        console.error('Failed to load services', err);
+        toast.error('Failed to load services');
+      }
+    };
+    loadServices();
+  }, []);
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -138,8 +165,19 @@ export default function Tenders() {
           await tenderApi.update(agencyId, selectedTender, values);
           toast.success('Tender updated successfully');
         } else {
-          await tenderApi.create(agencyId, values);
-          toast.success('Tender created successfully');
+          const { data: created } = await tenderApi.create(agencyId, values);
+          // If a file is provided, upload it after creation
+          if (file) {
+            try {
+              await tenderApi.uploadDocument(agencyId, created.id, file);
+              toast.success('Tender and file uploaded successfully');
+            } catch (uploadErr) {
+              console.error(uploadErr);
+              toast.warn('Tender created, but file upload failed');
+            }
+          } else {
+            toast.success('Tender created successfully');
+          }
         }
         dispatch(fetchTenders({ agencyId, page, size: rowsPerPage }));
         handleCloseDialog();
@@ -302,17 +340,34 @@ export default function Tenders() {
                 <TextField
                   fullWidth
                   name="serviceId"
-                  label="Service"
+                  label="Category"
                   select
                   value={formik.values.serviceId}
                   onChange={formik.handleChange}
                   error={formik.touched.serviceId && Boolean(formik.errors.serviceId)}
                   helperText={formik.touched.serviceId && formik.errors.serviceId}
                 >
-                  <MenuItem value={1}>Construction</MenuItem>
-                  <MenuItem value={2}>Consultancy</MenuItem>
-                  <MenuItem value={3}>Supplies</MenuItem>
+                  {flatServices.map(({ node, depth }) => (
+                    <MenuItem key={node.serviceId} value={node.serviceId} sx={{ pl: 1 + depth * 2 }}>
+                      {depth > 0 ? '— '.repeat(depth) : ''}
+                      {node.name}
+                    </MenuItem>
+                  ))}
                 </TextField>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Button variant="outlined" component="label" fullWidth>
+                  {file ? `Selected: ${file.name}` : 'Upload Document'}
+                  <input
+                    hidden
+                    type="file"
+                    name="file"
+                    onChange={(e) => {
+                      const f = e.currentTarget.files?.[0] || null;
+                      setFile(f);
+                    }}
+                  />
+                </Button>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
