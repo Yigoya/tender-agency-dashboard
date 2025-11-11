@@ -25,6 +25,8 @@ import {
   IconButton,
   CircularProgress,
   Alert,
+  FormControlLabel,
+  Checkbox,
 } from '@mui/material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -34,7 +36,7 @@ import { Plus, Edit2, Trash2, AlertCircle, CheckCircle, XCircle } from 'lucide-r
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchTenders } from '../store/slices/tenderSlice';
 import { adminApi, tenderApi } from '../services/api';
-import type { ServiceCategory, ServiceNode } from '../types/api';
+import type { ServiceNode } from '../types/api';
 
 const validationSchema = yup.object({
   title: yup.string().required('Title is required'),
@@ -47,9 +49,9 @@ const validationSchema = yup.object({
 });
 
 const statusColors = {
-  OPEN: '#4CAF50',
-  CLOSED: '#F44336',
-  CANCELLED: '#9E9E9E',
+  OPEN: '#2b78ac',
+  CLOSED: '#2b78ac',
+  CANCELLED: '#2b78ac',
 };
 
 const statusIcons = {
@@ -67,7 +69,6 @@ export default function Tenders() {
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedTender, setSelectedTender] = useState<number | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [categoryServices, setCategoryServices] = useState<ServiceNode[]>([]);
   const [flatServices, setFlatServices] = useState<{ node: ServiceNode; depth: number }[]>([]);
   const flattenServicesTree = (
     nodes: ServiceNode[],
@@ -89,7 +90,6 @@ export default function Tenders() {
         const { data } = await adminApi.getServices();
         const categoryOne = data.find((c) => c.categoryId === 1);
         if (categoryOne) {
-          setCategoryServices(categoryOne.services || []);
           setFlatServices(flattenServicesTree(categoryOne.services || []));
         }
       } catch (err) {
@@ -100,7 +100,7 @@ export default function Tenders() {
     loadServices();
   }, []);
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -155,6 +155,7 @@ export default function Tenders() {
       contactInfo: '',
       serviceId: 1,
       questionDeadline: '',
+      isFree: false,
     },
     validationSchema,
     onSubmit: async (values) => {
@@ -165,7 +166,8 @@ export default function Tenders() {
           await tenderApi.update(agencyId, selectedTender, values);
           toast.success('Tender updated successfully');
         } else {
-          const { data: created } = await tenderApi.create(agencyId, values);
+          // Ensure default false if user didn't toggle
+          const { data: created } = await tenderApi.create(agencyId, { ...values, isFree: values.isFree || false });
           // If a file is provided, upload it after creation
           if (file) {
             try {
@@ -393,6 +395,18 @@ export default function Tenders() {
                   error={formik.touched.questionDeadline && Boolean(formik.errors.questionDeadline)}
                   helperText={formik.touched.questionDeadline && formik.errors.questionDeadline}
                   InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={12} md={6} display="flex" alignItems="center">
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      name="isFree"
+                      checked={formik.values.isFree}
+                      onChange={(e) => formik.setFieldValue('isFree', e.target.checked)}
+                    />
+                  }
+                  label="Is Free"
                 />
               </Grid>
               <Grid item xs={12}>

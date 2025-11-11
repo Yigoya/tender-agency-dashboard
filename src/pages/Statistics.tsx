@@ -34,9 +34,9 @@ ChartJS.register(
 );
 
 const statusColors = {
-  OPEN: '#4CAF50',
-  CLOSED: '#F44336',
-  CANCELLED: '#9E9E9E',
+  OPEN: '#2b78ac',
+  CLOSED: '#2b78ac',
+  CANCELLED: '#2b78ac',
 };
 
 export default function Statistics() {
@@ -80,7 +80,7 @@ export default function Statistics() {
           statistics?.cancelledTenders || 0,
         ],
         backgroundColor: [
-          '#2196F3',
+          '#2b78ac',
           statusColors.OPEN,
           statusColors.CLOSED,
           statusColors.CANCELLED,
@@ -139,7 +139,7 @@ export default function Statistics() {
             title="Total Tenders"
             value={statistics?.totalTenders || 0}
             icon={FileText}
-            color="#2196F3"
+            color="#2b78ac"
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>

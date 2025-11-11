@@ -15,7 +15,8 @@ import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { toast } from 'react-toastify';
-import api from '../../services/api';
+import api, { authApi } from '../../services/api';
+import type { LoginRequest } from '../../types/api';
 
 const validationSchema = yup.object({
   email: yup
@@ -33,26 +34,26 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const formik = useFormik({
+  // Hidden metadata constants (sent silently with login request)
+  const HIDDEN_META = {
+    FCMToken: 'dKB-Qr1oRlKZmcpB5bM7Ng:APA91bEDkEgF_hC8y6NgIFWBQ-Tq6w5dSp3ALhleFaPRQ2MDV_cwmP-YVQU2NHZ5y38H76kZrXfhVBRuquK7JLK8XgViuhQvaSpb3UkalYLo-TzsvceQpvg',
+    deviceType: 'Samsung',
+    deviceModel: 'M12',
+    operatingSystem: 'ANDROID',
+  } as const;
+
+  const formik = useFormik<LoginRequest>({
     initialValues: {
       email: '',
       password: '',
+      ...HIDDEN_META,
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
         setError(null);
-        const deviceInfo = {
-          FCMToken: "dKB-Qr1oRlKZmcpB5bM7Ng:APA91bEDkEgF_hC8y6NgIFWBQ-Tq6w5dSp3ALhleFaPRQ2MDV_cwmP-YVQU2NHZ5y38H76kZrXfhVBRuquK7JLK8XgViuhQvaSpb3UkalYLo-TzsvceQpvg",
-          deviceType: navigator.platform,
-          deviceModel: navigator.userAgent,
-          operatingSystem: navigator.platform
-        };
-
-        const response = await api.post('/auth/login', {
-          ...values,
-          ...deviceInfo
-        });
+  // Merge visible credentials with hidden metadata constants
+  const response = await authApi.login({ ...values, ...HIDDEN_META });
 
         const { token, user } = response.data;
         
@@ -60,7 +61,7 @@ export default function Login() {
         localStorage.setItem('token', token);
         localStorage.setItem('userId', user.id);
         
-        // Get agency profile
+        // Get agency profile (axios client will include Authorization header via interceptor)
         const agencyResponse = await api.get(`/tender-agencies/user/${user.id}/profile`);
         localStorage.setItem('agencyProfile', JSON.stringify(agencyResponse.data));
         
@@ -80,7 +81,7 @@ export default function Login() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(45deg, #1976d2 30%, #21CBF3 90%)',
+  background: 'linear-gradient(45deg, #2b78ac 30%, #2b78ac 90%)',
         p: 3,
       }}
     >
@@ -128,6 +129,7 @@ export default function Login() {
             }}
           />
 
+          {/* Hidden metadata fields are not rendered. */}
           <TextField
             fullWidth
             id="password"
@@ -186,7 +188,7 @@ export default function Login() {
             <Link
               to="/register"
               style={{
-                color: '#1976d2',
+                color: '#2b78ac',
                 textDecoration: 'none',
                 fontWeight: 500,
               }}

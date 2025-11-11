@@ -35,9 +35,9 @@ import { fetchTenderById } from '../store/slices/tenderSlice';
 import { tenderApi } from '../services/api';
 
 const statusColors = {
-  OPEN: '#4CAF50',
-  CLOSED: '#F44336',
-  CANCELLED: '#9E9E9E',
+  OPEN: '#2b78ac',
+  CLOSED: '#2b78ac',
+  CANCELLED: '#2b78ac',
 };
 
 const statusIcons = {

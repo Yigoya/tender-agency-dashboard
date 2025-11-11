@@ -1,17 +1,17 @@
-import { createTheme } from '@mui/material/styles';
+import { createTheme, Shadows } from '@mui/material/styles';
 
 const theme = createTheme({
   palette: {
     primary: {
-      main: '#2563eb',
-      light: '#60a5fa',
-      dark: '#1d4ed8',
+      main: '#2b78ac',
+      light: '#3c8fc4',
+      dark: '#1e577d',
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#7c3aed',
-      light: '#a78bfa',
-      dark: '#5b21b6',
+      main: '#2b78ac',
+      light: '#3c8fc4',
+      dark: '#1e577d',
       contrastText: '#ffffff',
     },
     background: {
@@ -131,7 +131,7 @@ const theme = createTheme({
           '& .MuiOutlinedInput-root': {
             borderRadius: 8,
             '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#2563eb',
+              borderColor: '#2b78ac',
             },
           },
         },
@@ -173,14 +173,14 @@ const theme = createTheme({
   shape: {
     borderRadius: 8,
   },
-  shadows: [
+  shadows: ([
     'none',
     '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
     '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
     '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
     '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)',
     ...Array(20).fill('none'),
-  ],
+  ] as unknown) as Shadows,
 });
 
 export default theme;

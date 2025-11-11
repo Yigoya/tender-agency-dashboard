@@ -31,6 +31,8 @@ export interface Tender {
   serviceId: number;
   documentPath?: string;
   questionDeadline: string;
+  /** Indicates whether the tender is free (no associated fee/cost). */
+  isFree: boolean;
 }
 
 export interface TenderCreate {
@@ -41,6 +43,8 @@ export interface TenderCreate {
   contactInfo: string;
   serviceId: number;
   questionDeadline: string;
+  /** If omitted, defaults to false at creation time. */
+  isFree?: boolean;
 }
 
 export interface TenderUpdate {
@@ -50,6 +54,8 @@ export interface TenderUpdate {
   closingDate: string;
   contactInfo: string;
   questionDeadline: string;
+  /** Allow updating free status; optional to avoid forcing updates. */
+  isFree?: boolean;
 }
 
 // Statistics Types
@@ -91,4 +97,19 @@ export interface ServiceCategory {
   description: string;
   icon: string | null;
   services: ServiceNode[];
+}
+
+// Auth Types
+export interface LoginRequest {
+  email: string;
+  password: string;
+  FCMToken: string;
+  deviceType: string;
+  deviceModel: string;
+  operatingSystem: string; // e.g., ANDROID | IOS | WEB
+}
+
+export interface LoginResponse {
+  token: string;
+  user: { id: string | number; [key: string]: unknown };
 }

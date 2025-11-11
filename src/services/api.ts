@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AgencyRegistration, Agency, Tender, TenderCreate, TenderUpdate, AgencyStatistics, ServiceCategory } from '../types/api';
+import { AgencyRegistration, Agency, Tender, TenderCreate, TenderUpdate, AgencyStatistics, ServiceCategory, LoginRequest, LoginResponse } from '../types/api';
 
 const API_URL = 'https://hulumoya.zapto.org';
 // const API_URL = 'http://localhost:5000';
@@ -12,32 +12,32 @@ const api = axios.create({
 });
 
 // Add a request interceptor to include the token in requests
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+// api.interceptors.request.use(
+//   (config) => {
+//     const token = localStorage.getItem('token');
+//     if (token) {
+//       config.headers.Authorization = `Bearer ${token}`;
+//     }
+//     return config;
+//   },
+//   (error) => {
+//     return Promise.reject(error);
+//   }
+// );
 
-// Add a response interceptor to handle token expiration
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('userId');
-      localStorage.removeItem('agencyProfile');
-      window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+// // Add a response interceptor to handle token expiration
+// api.interceptors.response.use(
+//   (response) => response,
+//   (error) => {
+//     if (error.response?.status === 401) {
+//       localStorage.removeItem('token');
+//       localStorage.removeItem('userId');
+//       localStorage.removeItem('agencyProfile');
+//       window.location.href = '/login';
+//     }
+//     return Promise.reject(error);
+//   }
+// );
 
 export const agencyApi = {
   register: (data: AgencyRegistration) => 
@@ -59,6 +59,10 @@ export const agencyApi = {
   
   getStatistics: (agencyId: number) =>
     api.get<AgencyStatistics>(`/tender-agencies/${agencyId}/statistics`),
+};
+
+export const authApi = {
+  login: (data: LoginRequest) => api.post<LoginResponse>('/auth/login', data),
 };
 
 export const tenderApi = {
