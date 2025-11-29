@@ -21,41 +21,97 @@ export interface AgencyRegistration {
 // Tender Types
 export interface Tender {
   id: number;
-  title: string;
-  description: string;
-  location: string;
-  datePosted: string;
-  closingDate: string;
-  contactInfo: string;
+  /** High-level status of the tender */
   status: 'OPEN' | 'CLOSED' | 'CANCELLED';
-  serviceId: number;
+  /** Optional grouping or service linkage */
+  serviceId?: number;
+  /** Optional document path if uploaded */
   documentPath?: string;
-  questionDeadline: string;
-  /** Indicates whether the tender is free (no associated fee/cost). */
-  isFree: boolean;
+
+  /** Structured tender data */
+  summary: {
+    referenceNo: string;
+    publishedOn: string; // ISO date
+    bidDeadline: string; // ISO datetime
+    category: string;
+    type: string;
+    procurementMethod: string;
+    noticeNo?: string;
+    documentCost?: string | number;
+    location: string;
+  };
+
+  financials: {
+    bidValidityDays: number;
+    bidSecurityAmount: number;
+    contractPeriodDays: number;
+    performanceSecurityPercent: number;
+    paymentTerms: string;
+  };
+
+  scope: {
+    standards: string[];
+    earthworkExcavationCuM?: number;
+    concreteM35SqM?: number;
+    rccCulvertsCount?: number;
+    stormWaterDrainKm?: number;
+    warrantyMonths?: number;
+  };
+
+  eligibility: {
+    registrationCertificateRequired?: boolean;
+    similarProjectMinValue?: number;
+    turnoverMinAvg?: number;
+  };
+
+  timeline: {
+    preBidMeeting?: string; // ISO date or datetime
+    siteVisitStart?: string;
+    siteVisitEnd?: string;
+    clarificationDeadline?: string;
+    bidOpeningDate?: string; // ISO datetime
+  };
+
+  submission: {
+    documentLink?: string;
+    submissionMode: 'Physical' | 'Online' | string;
+    submissionAddress?: string;
+  };
+
+  issuingAuthority: {
+    organization: string;
+    department?: string;
+    address?: string;
+    tenderLocation?: string;
+    languageOfBids?: string;
+    governingLaw?: string;
+  };
 }
 
 export interface TenderCreate {
-  title: string;
-  description: string;
-  location: string;
-  closingDate: string;
-  contactInfo: string;
-  serviceId: number;
-  questionDeadline: string;
-  /** If omitted, defaults to false at creation time. */
-  isFree?: boolean;
+  summary: Tender['summary'];
+  financials: Tender['financials'];
+  scope: Tender['scope'];
+  eligibility: Tender['eligibility'];
+  timeline: Tender['timeline'];
+  submission: Tender['submission'];
+  issuingAuthority: Tender['issuingAuthority'];
+  /** Optional linkage */
+  serviceId?: number;
+  /** Initial status, default handled by backend */
+  status?: Tender['status'];
 }
 
 export interface TenderUpdate {
-  title: string;
-  description: string;
-  location: string;
-  closingDate: string;
-  contactInfo: string;
-  questionDeadline: string;
-  /** Allow updating free status; optional to avoid forcing updates. */
-  isFree?: boolean;
+  summary?: Partial<Tender['summary']>;
+  financials?: Partial<Tender['financials']>;
+  scope?: Partial<Tender['scope']>;
+  eligibility?: Partial<Tender['eligibility']>;
+  timeline?: Partial<Tender['timeline']>;
+  submission?: Partial<Tender['submission']>;
+  issuingAuthority?: Partial<Tender['issuingAuthority']>;
+  serviceId?: number;
+  status?: Tender['status'];
 }
 
 // Statistics Types
