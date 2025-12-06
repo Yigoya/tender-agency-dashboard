@@ -63,6 +63,8 @@ export const agencyApi = {
 
 export const authApi = {
   login: (data: LoginRequest) => api.post<LoginResponse>('/auth/login', data),
+  verifyEmail: (token: string) => api.get<LoginResponse>(`/auth/verify`, { params: { token } }),
+  resendVerification: (email: string) => api.post<void>(`/auth/resend-verification`, undefined, { params: { email } }),
 };
 
 export const tenderApi = {

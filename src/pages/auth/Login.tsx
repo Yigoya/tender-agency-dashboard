@@ -16,6 +16,8 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { toast } from 'react-toastify';
 import api, { authApi } from '../../services/api';
+import { useAppDispatch } from '../../store/store';
+import { setAuth } from '../../store/slices/authSlice';
 import type { LoginRequest } from '../../types/api';
 
 const validationSchema = yup.object({
@@ -31,6 +33,7 @@ const validationSchema = yup.object({
 
 export default function Login() {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,13 +63,27 @@ export default function Login() {
         // Store token and user info
         localStorage.setItem('token', token);
         localStorage.setItem('userId', user.id);
+        dispatch(setAuth({ token, user }));
         
         // Get agency profile (axios client will include Authorization header via interceptor)
         const agencyResponse = await api.get(`/tender-agencies/user/${user.id}/profile`);
         localStorage.setItem('agencyProfile', JSON.stringify(agencyResponse.data));
         
-        toast.success('Login successful!');
-        navigate('/');
+        // If user is not verified, send to verify page
+        const status = (user?.status || user?.verifiedStatus || '').toString().toUpperCase();
+        const isVerified = status === 'VERIFIED' || status === 'ACTIVE' || status === 'APPROVED';
+
+        if (!isVerified) {
+          // Keep the email used for resend
+          if (values.email) {
+            localStorage.setItem('pendingEmail', values.email);
+          }
+          toast.info('Please verify your email to continue.');
+          navigate('/verify-email');
+        } else {
+          toast.success('Login successful!');
+          navigate('/');
+        }
       } catch (err: any) {
         setError(err.response?.data?.message || 'Failed to login. Please try again.');
         toast.error('Login failed');

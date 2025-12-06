@@ -2,9 +2,11 @@ import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import agencyReducer from './slices/agencySlice';
 import tenderReducer from './slices/tenderSlice';
+import authReducer from './slices/authSlice';
 
 export const store = configureStore({
   reducer: {
+    auth: authReducer,
     agency: agencyReducer,
     tender: tenderReducer,
   },

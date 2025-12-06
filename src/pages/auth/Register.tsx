@@ -66,9 +66,10 @@ export default function Register() {
         const { confirmPassword, ...registerData } = values;
         
         const response = await api.post('/tender-agencies/register', registerData);
-        
-        toast.success('Registration successful! Please login to continue.');
-        navigate('/login');
+        // Persist email for resend-verification convenience
+        localStorage.setItem('pendingEmail', registerData.email);
+        toast.success('Registration successful! Check your email to verify.');
+        navigate('/verify-email');
       } catch (err: any) {
         setError(err.response?.data?.message || 'Registration failed. Please try again.');
         toast.error('Registration failed');

@@ -7,6 +7,8 @@ import Settings from '../pages/Settings';
 import TenderDetails from '../pages/TenderDetails';
 import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
+import VerifyEmailPending from '../pages/auth/VerifyEmailPending';
+import VerifyEmail from '../pages/auth/VerifyEmail';
 import PrivateRoute from './PrivateRoute';
 
 export default function AppRoutes() {
@@ -14,6 +16,9 @@ export default function AppRoutes() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify-email" element={<VerifyEmailPending />} />
+      {/* Handler for verification link: https://<domain>/auth/verify?token=... */}
+      <Route path="/auth/verify" element={<VerifyEmail />} />
       
       <Route element={<PrivateRoute />}>
         <Route path="/" element={<Dashboard />} />
