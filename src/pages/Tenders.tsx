@@ -276,61 +276,129 @@ export default function Tenders() {
       try {
         // In production, get the agencyId from auth context/state
         const agencyId = 1;
+        const formatCurrency = (input?: string | number | null) => {
+          if (input === undefined || input === null) return undefined;
+          const asString = String(input).trim();
+          if (!asString) return undefined;
+          return /^([A-Z]{3})/.test(asString) ? asString : `ETB ${asString}`;
+        };
+
+        const summaryPayload = {
+          referenceNo: values.summary.referenceNo || values.title,
+          publishedOn: values.summary.publishedOn || new Date().toISOString().split('T')[0],
+          bidDeadline: values.summary.bidDeadline || values.closingDate,
+          category: values.summary.category || 'General',
+          type: values.summary.type || 'National',
+          procurementMethod: values.summary.procurementMethod || 'Open Tender',
+          noticeNo: values.summary.noticeNo || undefined,
+          documentCost: values.summary.documentCost || undefined,
+          location: values.summary.location || values.location,
+        };
+
+        const financialPayload = {
+          bidValidityDays: values.financials.bidValidityDays ?? undefined,
+          bidSecurityAmount: values.financials.bidSecurityAmount ?? undefined,
+          contractPeriodDays: values.financials.contractPeriodDays ?? undefined,
+          performanceSecurityPercent: values.financials.performanceSecurityPercent ?? undefined,
+          paymentTerms: values.financials.paymentTerms || 'As per tender',
+        };
+
+        const scopePayload = {
+          standards: values.scope.standards.length ? values.scope.standards : ['GENERAL'],
+          earthworkExcavationCuM: values.scope.earthworkExcavationCuM,
+          concreteM35SqM: values.scope.concreteM35SqM,
+          rccCulvertsCount: values.scope.rccCulvertsCount,
+          stormWaterDrainKm: values.scope.stormWaterDrainKm,
+          warrantyMonths: values.scope.warrantyMonths,
+        };
+
+        const eligibilityPayload = {
+          registrationCertificateRequired: values.eligibility.registrationCertificateRequired || false,
+          similarProjectMinValue: values.eligibility.similarProjectMinValue,
+          turnoverMinAvg: values.eligibility.turnoverMinAvg,
+        };
+
+        const timelinePayload = {
+          preBidMeeting: values.timeline.preBidMeeting || undefined,
+          siteVisitStart: values.timeline.siteVisitStart || undefined,
+          siteVisitEnd: values.timeline.siteVisitEnd || undefined,
+          clarificationDeadline: values.timeline.clarificationDeadline || undefined,
+          bidOpeningDate: values.timeline.bidOpeningDate || undefined,
+        };
+
+        const submissionPayload = {
+          documentLink: values.submission.documentLink || undefined,
+          submissionMode: values.submission.submissionMode || 'Physical',
+          submissionAddress: values.submission.submissionAddress || undefined,
+        };
+
+        const issuingAuthorityPayload = {
+          organization: values.issuingAuthority.organization || 'Unknown Org',
+          department: values.issuingAuthority.department || undefined,
+          address: values.issuingAuthority.address || undefined,
+          tenderLocation: values.issuingAuthority.tenderLocation || values.location,
+          languageOfBids: values.issuingAuthority.languageOfBids || undefined,
+          governingLaw: values.issuingAuthority.governingLaw || undefined,
+        };
+
+        const derivedBidValidity = typeof financialPayload.bidValidityDays === 'number' && financialPayload.bidValidityDays > 0
+          ? `${financialPayload.bidValidityDays} days`
+          : undefined;
+        const derivedBidSecurity = formatCurrency(financialPayload.bidSecurityAmount ?? undefined);
+        const derivedContractPeriod = typeof financialPayload.contractPeriodDays === 'number' && financialPayload.contractPeriodDays > 0
+          ? `${financialPayload.contractPeriodDays} days`
+          : undefined;
+        const derivedPerformanceSecurity = typeof financialPayload.performanceSecurityPercent === 'number' && financialPayload.performanceSecurityPercent > 0
+          ? `${financialPayload.performanceSecurityPercent}% of contract value`
+          : undefined;
+        const derivedKeyDeliverables = scopePayload.standards && scopePayload.standards.length
+          ? `Standards: ${scopePayload.standards.join(', ')}`
+          : undefined;
+        const scopeHighlights: string[] = [];
+        if (scopePayload.earthworkExcavationCuM)
+          scopeHighlights.push(`Earthwork excavation ≥ ${scopePayload.earthworkExcavationCuM} CuM`);
+        if (scopePayload.concreteM35SqM)
+          scopeHighlights.push(`Concrete M35 ≥ ${scopePayload.concreteM35SqM} SqM`);
+        if (scopePayload.rccCulvertsCount)
+          scopeHighlights.push(`RCC culverts count: ${scopePayload.rccCulvertsCount}`);
+        if (scopePayload.stormWaterDrainKm)
+          scopeHighlights.push(`Storm water drain ≥ ${scopePayload.stormWaterDrainKm} km`);
+        if (scopePayload.warrantyMonths)
+          scopeHighlights.push(`Warranty ≥ ${scopePayload.warrantyMonths} months`);
+        const derivedTechnicalSpecifications = scopeHighlights.length ? scopeHighlights.join('; ') : undefined;
+
         // Build nested payload regardless of mode
         const nestedPayload = {
-          summary: {
-            referenceNo: values.summary.referenceNo || values.title,
-            publishedOn: values.summary.publishedOn || new Date().toISOString().split('T')[0],
-            bidDeadline: values.summary.bidDeadline || values.closingDate,
-            category: values.summary.category || 'General',
-            type: values.summary.type || 'National',
-            procurementMethod: values.summary.procurementMethod || 'Open Tender',
-            noticeNo: values.summary.noticeNo || undefined,
-            documentCost: values.summary.documentCost || undefined,
-            location: values.summary.location || values.location,
-          },
-          financials: {
-            bidValidityDays: values.financials.bidValidityDays ?? 0,
-            bidSecurityAmount: values.financials.bidSecurityAmount ?? 0,
-            contractPeriodDays: values.financials.contractPeriodDays ?? 0,
-            performanceSecurityPercent: values.financials.performanceSecurityPercent ?? 0,
-            paymentTerms: values.financials.paymentTerms || 'As per tender',
-          },
-            scope: {
-            standards: values.scope.standards.length ? values.scope.standards : ['GENERAL'],
-            earthworkExcavationCuM: values.scope.earthworkExcavationCuM,
-            concreteM35SqM: values.scope.concreteM35SqM,
-            rccCulvertsCount: values.scope.rccCulvertsCount,
-            stormWaterDrainKm: values.scope.stormWaterDrainKm,
-            warrantyMonths: values.scope.warrantyMonths,
-          },
-          eligibility: {
-            registrationCertificateRequired: values.eligibility.registrationCertificateRequired || false,
-            similarProjectMinValue: values.eligibility.similarProjectMinValue,
-            turnoverMinAvg: values.eligibility.turnoverMinAvg,
-          },
-          timeline: {
-            preBidMeeting: values.timeline.preBidMeeting || undefined,
-            siteVisitStart: values.timeline.siteVisitStart || undefined,
-            siteVisitEnd: values.timeline.siteVisitEnd || undefined,
-            clarificationDeadline: values.timeline.clarificationDeadline || undefined,
-            bidOpeningDate: values.timeline.bidOpeningDate || undefined,
-          },
-          submission: {
-            documentLink: values.submission.documentLink || undefined,
-            submissionMode: values.submission.submissionMode || 'Physical',
-            submissionAddress: values.submission.submissionAddress || undefined,
-          },
-          issuingAuthority: {
-            organization: values.issuingAuthority.organization || 'Unknown Org',
-            department: values.issuingAuthority.department || undefined,
-            address: values.issuingAuthority.address || undefined,
-            tenderLocation: values.issuingAuthority.tenderLocation || values.location,
-            languageOfBids: values.issuingAuthority.languageOfBids || undefined,
-            governingLaw: values.issuingAuthority.governingLaw || undefined,
-          },
+          title: values.title,
+          description: values.description,
+          location: values.location,
+          closingDate: values.closingDate,
+          contactInfo: values.contactInfo,
+          questionDeadline: values.questionDeadline,
           serviceId: values.serviceId,
+          isFree: values.isFree,
           status: values.status as any,
+          summary: summaryPayload,
+          financials: financialPayload,
+          scope: scopePayload,
+          eligibility: eligibilityPayload,
+          timeline: timelinePayload,
+          submission: submissionPayload,
+          issuingAuthority: issuingAuthorityPayload,
+          categoryId: values.serviceId,
+          referenceNumber: summaryPayload.referenceNo,
+          noticeNumber: summaryPayload.noticeNo,
+          productCategory: summaryPayload.category,
+          tenderType: summaryPayload.type,
+          procurementMethod: summaryPayload.procurementMethod,
+          costOfTenderDocument: formatCurrency(summaryPayload.documentCost ?? undefined),
+          bidValidity: derivedBidValidity,
+          bidSecurity: derivedBidSecurity,
+          contractPeriod: derivedContractPeriod,
+          performanceSecurity: derivedPerformanceSecurity,
+          paymentTerms: financialPayload.paymentTerms,
+          keyDeliverables: derivedKeyDeliverables,
+          technicalSpecifications: derivedTechnicalSpecifications,
         };
         if (selectedTender) {
           await tenderApi.update(agencyId, selectedTender, nestedPayload as any);

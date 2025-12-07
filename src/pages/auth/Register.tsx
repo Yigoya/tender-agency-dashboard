@@ -19,7 +19,7 @@ import {
   Lock,
   Building2,
   Globe,
-  User,
+  Phone,
   Receipt,
 } from 'lucide-react';
 import { useFormik } from 'formik';
@@ -31,7 +31,11 @@ const validationSchema = yup.object({
   companyName: yup.string().required('Company name is required'),
   tinNumber: yup.string().required('TIN number is required'),
   website: yup.string().url('Enter a valid URL'),
-  contactPerson: yup.string(),
+  contactPerson: yup
+    .string()
+    .required('Contact person phone is required')
+    .matches(/^\d{9}$/,
+      'Enter 9 digits, e.g. 912345678'),
   email: yup.string().email('Enter a valid email').required('Email is required'),
   password: yup
     .string()
@@ -63,7 +67,11 @@ export default function Register() {
     onSubmit: async (values) => {
       try {
         setError(null);
-        const { confirmPassword, ...registerData } = values;
+        const { confirmPassword, ...rest } = values;
+        const registerData = {
+          ...rest,
+          contactPerson: `+251${rest.contactPerson}`,
+        };
         
         const response = await api.post('/tender-agencies/register', registerData);
         // Persist email for resend-verification convenience
@@ -172,15 +180,24 @@ export default function Register() {
               <TextField
                 fullWidth
                 name="contactPerson"
-                label="Contact Person"
+                label="Contact Person Phone Number"
+                placeholder="9XXXXXXXX"
                 value={formik.values.contactPerson}
-                onChange={formik.handleChange}
+                onChange={(event) => {
+                  const digits = event.target.value.replace(/\D/g, '').slice(0, 9);
+                  formik.setFieldValue('contactPerson', digits);
+                }}
+                onBlur={formik.handleBlur}
                 error={formik.touched.contactPerson && Boolean(formik.errors.contactPerson)}
                 helperText={formik.touched.contactPerson && formik.errors.contactPerson}
+                inputProps={{ inputMode: 'numeric', maxLength: 9 }}
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <User size={20} />
+                      <Phone size={20} />
+                      <Typography component="span" sx={{ ml: 1, fontWeight: 500 }}>
+                        +251
+                      </Typography>
                     </InputAdornment>
                   ),
                 }}

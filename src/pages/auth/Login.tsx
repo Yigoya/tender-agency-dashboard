@@ -55,8 +55,8 @@ export default function Login() {
     onSubmit: async (values) => {
       try {
         setError(null);
-  // Merge visible credentials with hidden metadata constants
-  const response = await authApi.login({ ...values, ...HIDDEN_META });
+        // Merge visible credentials with hidden metadata constants
+        const response = await authApi.login({ ...values, ...HIDDEN_META });
 
         const { token, user } = response.data;
         
@@ -85,8 +85,14 @@ export default function Login() {
           navigate('/');
         }
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to login. Please try again.');
-        toast.error('Login failed');
+        const apiError = err.response?.data;
+        const detailMessage =
+          Array.isArray(apiError?.details) && apiError.details.length > 0
+            ? apiError.details.join(', ')
+            : apiError?.message;
+        const fallbackMessage = detailMessage || 'Failed to login. Please try again.';
+        setError(fallbackMessage);
+        toast.error(fallbackMessage);
       }
     },
   });

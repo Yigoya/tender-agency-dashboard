@@ -21,97 +21,98 @@ export interface AgencyRegistration {
 // Tender Types
 export interface Tender {
   id: number;
-  /** High-level status of the tender */
+  title: string;
+  description: string;
+  location: string;
+  datePosted: string;
+  closingDate: string;
+  contactInfo: string;
   status: 'OPEN' | 'CLOSED' | 'CANCELLED';
-  /** Optional grouping or service linkage */
-  serviceId?: number;
-  /** Optional document path if uploaded */
+  serviceId: number;
   documentPath?: string;
-
-  /** Structured tender data */
-  summary: {
-    referenceNo: string;
-    publishedOn: string; // ISO date
-    bidDeadline: string; // ISO datetime
-    category: string;
-    type: string;
-    procurementMethod: string;
-    noticeNo?: string;
-    documentCost?: string | number;
-    location: string;
-  };
-
-  financials: {
-    bidValidityDays: number;
-    bidSecurityAmount: number;
-    contractPeriodDays: number;
-    performanceSecurityPercent: number;
-    paymentTerms: string;
-  };
-
-  scope: {
-    standards: string[];
-    earthworkExcavationCuM?: number;
-    concreteM35SqM?: number;
-    rccCulvertsCount?: number;
-    stormWaterDrainKm?: number;
-    warrantyMonths?: number;
-  };
-
-  eligibility: {
-    registrationCertificateRequired?: boolean;
-    similarProjectMinValue?: number;
-    turnoverMinAvg?: number;
-  };
-
-  timeline: {
-    preBidMeeting?: string; // ISO date or datetime
-    siteVisitStart?: string;
-    siteVisitEnd?: string;
-    clarificationDeadline?: string;
-    bidOpeningDate?: string; // ISO datetime
-  };
-
-  submission: {
-    documentLink?: string;
-    submissionMode: 'Physical' | 'Online' | string;
-    submissionAddress?: string;
-  };
-
-  issuingAuthority: {
-    organization: string;
-    department?: string;
-    address?: string;
-    tenderLocation?: string;
-    languageOfBids?: string;
-    governingLaw?: string;
-  };
+  questionDeadline: string;
+  /** Indicates whether the tender is free (no associated fee/cost). */
+  isFree: boolean;
+  /** Optional category identifier returned by newer API versions. */
+  categoryId?: number;
+  /** Business reference number shared with bidders. */
+  referenceNumber?: string;
+  /** Official notice number assigned by the issuer. */
+  noticeNumber?: string;
+  /** High-level product category descriptor. */
+  productCategory?: string;
+  /** Tender type label (e.g., Open International). */
+  tenderType?: string;
+  /** Procurement method label (e.g., Open Tender). */
+  procurementMethod?: string;
+  /** Published cost of the tender document (keep as formatted string). */
+  costOfTenderDocument?: string;
+  /** Bid validity window expressed as free-form text. */
+  bidValidity?: string;
+  /** Bid security requirement expressed as formatted text. */
+  bidSecurity?: string;
+  /** Contract period window expressed as formatted text. */
+  contractPeriod?: string;
+  /** Performance security requirement expressed as formatted text. */
+  performanceSecurity?: string;
+  /** Payment terms shared with bidders. */
+  paymentTerms?: string;
+  /** Short description of the expected deliverables. */
+  keyDeliverables?: string;
+  /** Technical specification summary. */
+  technicalSpecifications?: string;
 }
 
 export interface TenderCreate {
-  summary: Tender['summary'];
-  financials: Tender['financials'];
-  scope: Tender['scope'];
-  eligibility: Tender['eligibility'];
-  timeline: Tender['timeline'];
-  submission: Tender['submission'];
-  issuingAuthority: Tender['issuingAuthority'];
-  /** Optional linkage */
-  serviceId?: number;
-  /** Initial status, default handled by backend */
-  status?: Tender['status'];
+  title: string;
+  description: string;
+  location: string;
+  closingDate: string;
+  contactInfo: string;
+  serviceId: number;
+  questionDeadline: string;
+  /** If omitted, defaults to false at creation time. */
+  isFree?: boolean;
+  categoryId?: number;
+  referenceNumber?: string;
+  noticeNumber?: string;
+  productCategory?: string;
+  tenderType?: string;
+  procurementMethod?: string;
+  costOfTenderDocument?: string;
+  bidValidity?: string;
+  bidSecurity?: string;
+  contractPeriod?: string;
+  performanceSecurity?: string;
+  paymentTerms?: string;
+  keyDeliverables?: string;
+  technicalSpecifications?: string;
 }
 
 export interface TenderUpdate {
-  summary?: Partial<Tender['summary']>;
-  financials?: Partial<Tender['financials']>;
-  scope?: Partial<Tender['scope']>;
-  eligibility?: Partial<Tender['eligibility']>;
-  timeline?: Partial<Tender['timeline']>;
-  submission?: Partial<Tender['submission']>;
-  issuingAuthority?: Partial<Tender['issuingAuthority']>;
+  title: string;
+  description: string;
+  location: string;
+  closingDate: string;
+  contactInfo: string;
+  questionDeadline: string;
+  /** Allow updating free status; optional to avoid forcing updates. */
+  isFree?: boolean;
   serviceId?: number;
-  status?: Tender['status'];
+  categoryId?: number;
+  referenceNumber?: string;
+  noticeNumber?: string;
+  productCategory?: string;
+  tenderType?: string;
+  procurementMethod?: string;
+  costOfTenderDocument?: string;
+  bidValidity?: string;
+  bidSecurity?: string;
+  contractPeriod?: string;
+  performanceSecurity?: string;
+  paymentTerms?: string;
+  keyDeliverables?: string;
+  technicalSpecifications?: string;
 }
 
 // Statistics Types
