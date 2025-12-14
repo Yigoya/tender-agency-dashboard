@@ -28,11 +28,11 @@ import {
   MapPin,
   Calendar,
   Phone,
-  HelpCircle,
 } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchTenderById } from '../store/slices/tenderSlice';
-import { tenderApi } from '../services/api';
+import { adminApi, tenderApi } from '../services/api';
+import type { ServiceNode } from '../types/api';
 
 const statusColors = {
   OPEN: '#2b78ac',
@@ -54,6 +54,7 @@ export default function TenderDetails() {
   const [uploadLoading, setUploadLoading] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<'OPEN' | 'CLOSED' | 'CANCELLED'>('OPEN');
+  const [serviceLookup, setServiceLookup] = useState<Map<number, string>>(new Map());
 
   useEffect(() => {
     if (id) {
@@ -62,6 +63,33 @@ export default function TenderDetails() {
       dispatch(fetchTenderById({ agencyId, tenderId: parseInt(id, 10) }));
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    const flattenServices = (
+      nodes: ServiceNode[] = [],
+      trail: string[] = []
+    ): Array<{ id: number; breadcrumb: string }> =>
+      nodes.flatMap((node) => {
+        const currentTrail = [...trail, node.name];
+        const current = { id: node.serviceId, breadcrumb: currentTrail.join(' / ') };
+        const children = node.services ? flattenServices(node.services, currentTrail) : [];
+        return [current, ...children];
+      });
+
+    const loadServices = async () => {
+      try {
+        const { data } = await adminApi.getServices();
+        const tenderCategory = data.find((category) => category.categoryId === 1);
+        if (!tenderCategory) return;
+        const flattened = flattenServices(tenderCategory.services || []);
+        setServiceLookup(new Map(flattened.map((entry) => [entry.id, entry.breadcrumb])));
+      } catch (err) {
+        console.error('Failed to load services', err);
+      }
+    };
+
+    loadServices();
+  }, []);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -113,6 +141,13 @@ export default function TenderDetails() {
   }
 
   const StatusIcon = statusIcons[tender.status];
+  const safeFormatDate = (value?: string) => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.valueOf())) return '-';
+    return format(parsed, 'MMM d, yyyy');
+  };
+  const tenderService = typeof tender.serviceId === 'number' ? serviceLookup.get(tender.serviceId) : undefined;
 
   return (
     <Box>
@@ -183,7 +218,7 @@ export default function TenderDetails() {
                   <Box display="flex" alignItems="center" mb={2}>
                     <Calendar size={20} />
                     <Typography variant="body1" ml={1}>
-                      Posted: {format(new Date(tender.datePosted), 'MMM d, yyyy')}
+                      Posted: {safeFormatDate(tender.datePosted)}
                     </Typography>
                   </Box>
                 </Grid>
@@ -191,19 +226,125 @@ export default function TenderDetails() {
                   <Box display="flex" alignItems="center" mb={2}>
                     <Calendar size={20} />
                     <Typography variant="body1" ml={1}>
-                      Closes: {format(new Date(tender.closingDate), 'MMM d, yyyy')}
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12}>
-                  <Box display="flex" alignItems="center" mb={2}>
-                    <HelpCircle size={20} />
-                    <Typography variant="body1" ml={1}>
-                      Questions Due: {format(new Date(tender.questionDeadline), 'MMM d, yyyy')}
+                      Closes: {safeFormatDate(tender.closingDate)}
                     </Typography>
                   </Box>
                 </Grid>
               </Grid>
+
+              <Box mt={4}>
+                <Typography variant="h6" gutterBottom>
+                  Key Details
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Reference Number
+                    </Typography>
+                    <Typography variant="body1">{tender.referenceNumber || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Notice Number
+                    </Typography>
+                    <Typography variant="body1">{tender.noticeNumber || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Product Category
+                    </Typography>
+                    <Typography variant="body1">{tender.productCategory || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Tender Type
+                    </Typography>
+                    <Typography variant="body1">{tender.tenderType || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Procurement Method
+                    </Typography>
+                    <Typography variant="body1">{tender.procurementMethod || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      Service
+                    </Typography>
+                    <Typography variant="body1">
+                      {tenderService ?? (typeof tender.serviceId === 'number' ? `Service #${tender.serviceId}` : 'Not provided')}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Cost of Tender Document
+                    </Typography>
+                    <Typography variant="body1">{tender.costOfTenderDocument || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Is Free
+                    </Typography>
+                    <Typography variant="body1">{tender.isFree ? 'Yes' : 'No'}</Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Box mt={4}>
+                <Typography variant="h6" gutterBottom>
+                  Commercial Terms
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Bid Validity
+                    </Typography>
+                    <Typography variant="body1">{tender.bidValidity || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Bid Security
+                    </Typography>
+                    <Typography variant="body1">{tender.bidSecurity || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Contract Period
+                    </Typography>
+                    <Typography variant="body1">{tender.contractPeriod || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Performance Security
+                    </Typography>
+                    <Typography variant="body1">{tender.performanceSecurity || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      Payment Terms
+                    </Typography>
+                    <Typography variant="body1">{tender.paymentTerms || '-'}</Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Box mt={4}>
+                <Typography variant="h6" gutterBottom>
+                  Deliverables & Specifications
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Key Deliverables
+                </Typography>
+                <Typography variant="body1" paragraph>
+                  {tender.keyDeliverables || 'Not provided.'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Technical Specifications
+                </Typography>
+                <Typography variant="body1">
+                  {tender.technicalSpecifications || 'Not provided.'}
+                </Typography>
+              </Box>
             </CardContent>
           </Card>
         </Grid>

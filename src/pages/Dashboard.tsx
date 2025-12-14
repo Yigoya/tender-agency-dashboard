@@ -103,6 +103,13 @@ export default function Dashboard() {
     </Card>
   );
 
+  const safeFormatDate = (value?: string) => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.valueOf())) return '-';
+    return format(parsed, 'MMM d, yyyy');
+  };
+
   return (
     <Box>
       <Typography variant="h4" mb={4}>
@@ -181,7 +188,7 @@ export default function Dashboard() {
                           <TableCell>{tender.title}</TableCell>
                           <TableCell>{tender.location}</TableCell>
                           <TableCell>
-                            {format(new Date(tender.closingDate), 'MMM d, yyyy')}
+                            {safeFormatDate(tender.closingDate)}
                           </TableCell>
                           <TableCell>
                             <Chip

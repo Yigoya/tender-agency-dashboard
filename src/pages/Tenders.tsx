@@ -1,32 +1,32 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  Alert,
   Box,
+  Button,
   Card,
   CardContent,
-  Typography,
-  Button,
+  Checkbox,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
+  Grid,
+  IconButton,
+  MenuItem,
+  Paper,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
-  TableRow,
   TablePagination,
-  Paper,
-  Chip,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  TableRow,
   TextField,
-  MenuItem,
-  Grid,
-  IconButton,
-  CircularProgress,
-  Alert,
-  FormControlLabel,
-  Checkbox,
+  Typography,
 } from '@mui/material';
 import { useFormik } from 'formik';
 import * as yup from 'yup';
@@ -36,72 +36,78 @@ import { Plus, Edit2, Trash2, AlertCircle, CheckCircle, XCircle } from 'lucide-r
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchTenders } from '../store/slices/tenderSlice';
 import { adminApi, tenderApi } from '../services/api';
-import type { ServiceNode } from '../types/api';
+import type { ServiceNode, Tender, TenderCreate } from '../types/api';
 
-// Validation: keep original simple fields required; advanced nested fields optional.
+type OptionalTenderField =
+  | 'noticeNumber'
+  | 'productCategory'
+  | 'tenderType'
+  | 'procurementMethod'
+  | 'costOfTenderDocument'
+  | 'bidValidity'
+  | 'bidSecurity'
+  | 'contractPeriod'
+  | 'performanceSecurity'
+  | 'paymentTerms'
+  | 'keyDeliverables'
+  | 'technicalSpecifications';
+
+const optionalText = () =>
+  yup
+    .string()
+    .trim()
+    .transform((value) => (value === '' ? undefined : value))
+    .notRequired();
+
 const validationSchema = yup.object({
   title: yup.string().required('Title is required'),
   description: yup.string().required('Description is required'),
   location: yup.string().required('Location is required'),
   closingDate: yup.string().required('Closing date is required'),
   contactInfo: yup.string().required('Contact information is required'),
-  serviceId: yup.number().required('Service is required'),
-  questionDeadline: yup.string().required('Question deadline is required'),
-  isFree: yup.boolean().optional(),
-  // Advanced nested (all optional if user does not toggle advanced mode)
-  summary: yup.object({
-    referenceNo: yup.string().optional(),
-    publishedOn: yup.string().optional(),
-    bidDeadline: yup.string().optional(),
-    category: yup.string().optional(),
-    type: yup.string().optional(),
-    procurementMethod: yup.string().optional(),
-    noticeNo: yup.string().optional(),
-    documentCost: yup.mixed().optional(),
-    location: yup.string().optional(),
-  }).optional(),
-  financials: yup.object({
-    bidValidityDays: yup.number().optional(),
-    bidSecurityAmount: yup.number().optional(),
-    contractPeriodDays: yup.number().optional(),
-    performanceSecurityPercent: yup.number().optional(),
-    paymentTerms: yup.string().optional(),
-  }).optional(),
-  scope: yup.object({
-    standards: yup.array().of(yup.string()).optional(),
-    earthworkExcavationCuM: yup.number().optional(),
-    concreteM35SqM: yup.number().optional(),
-    rccCulvertsCount: yup.number().optional(),
-    stormWaterDrainKm: yup.number().optional(),
-    warrantyMonths: yup.number().optional(),
-  }).optional(),
-  eligibility: yup.object({
-    registrationCertificateRequired: yup.boolean().optional(),
-    similarProjectMinValue: yup.number().optional(),
-    turnoverMinAvg: yup.number().optional(),
-  }).optional(),
-  timeline: yup.object({
-    preBidMeeting: yup.string().optional(),
-    siteVisitStart: yup.string().optional(),
-    siteVisitEnd: yup.string().optional(),
-    clarificationDeadline: yup.string().optional(),
-    bidOpeningDate: yup.string().optional(),
-  }).optional(),
-  submission: yup.object({
-    documentLink: yup.string().url('Must be a valid URL').optional(),
-    submissionMode: yup.string().optional(),
-    submissionAddress: yup.string().optional(),
-  }).optional(),
-  issuingAuthority: yup.object({
-    organization: yup.string().optional(),
-    department: yup.string().optional(),
-    address: yup.string().optional(),
-    tenderLocation: yup.string().optional(),
-    languageOfBids: yup.string().optional(),
-    governingLaw: yup.string().optional(),
-  }).optional(),
-  status: yup.string().oneOf(['OPEN', 'CLOSED', 'CANCELLED']).optional(),
+  serviceId: yup.number().positive('Select a service').required('Service is required'),
+  status: yup.mixed<'OPEN' | 'CLOSED' | 'CANCELLED'>().oneOf(['OPEN', 'CLOSED', 'CANCELLED']).required(),
+  isFree: yup.boolean().required(),
+  referenceNumber: yup.string().trim().required('Reference number is required'),
+  noticeNumber: optionalText(),
+  productCategory: optionalText(),
+  tenderType: optionalText(),
+  procurementMethod: optionalText(),
+  costOfTenderDocument: optionalText(),
+  bidValidity: optionalText(),
+  bidSecurity: optionalText(),
+  contractPeriod: optionalText(),
+  performanceSecurity: optionalText(),
+  paymentTerms: optionalText(),
+  keyDeliverables: optionalText(),
+  technicalSpecifications: optionalText(),
 });
+
+type TenderFormValues = yup.InferType<typeof validationSchema>;
+
+const defaultFormValues: TenderFormValues = {
+  title: '',
+  description: '',
+  location: '',
+  closingDate: '',
+  contactInfo: '',
+  serviceId: 0,
+  status: 'OPEN',
+  isFree: false,
+  referenceNumber: '',
+  noticeNumber: '',
+  productCategory: '',
+  tenderType: '',
+  procurementMethod: '',
+  costOfTenderDocument: '',
+  bidValidity: '',
+  bidSecurity: '',
+  contractPeriod: '',
+  performanceSecurity: '',
+  paymentTerms: '',
+  keyDeliverables: '',
+  technicalSpecifications: '',
+};
 
 const statusColors = {
   OPEN: '#2b78ac',
@@ -115,6 +121,83 @@ const statusIcons = {
   CANCELLED: AlertCircle,
 };
 
+const normaliseDateTimeInput = (value?: string) => {
+  if (!value) return '';
+  return value.length >= 16 ? value.slice(0, 16) : value;
+};
+
+const ensureSecondsPrecision = (value: string) => {
+  if (!value) return value;
+  return value.length === 16 ? `${value}:00` : value;
+};
+
+const mapTenderToForm = (tender: Tender): TenderFormValues => ({
+  title: tender.title ?? '',
+  description: tender.description ?? '',
+  location: tender.location ?? '',
+  closingDate: normaliseDateTimeInput(tender.closingDate),
+  contactInfo: tender.contactInfo ?? '',
+  serviceId: tender.serviceId ?? tender.categoryId ?? 0,
+  status: tender.status ?? 'OPEN',
+  isFree: tender.isFree ?? false,
+  referenceNumber: tender.referenceNumber ?? '',
+  noticeNumber: tender.noticeNumber ?? '',
+  productCategory: tender.productCategory ?? '',
+  tenderType: tender.tenderType ?? '',
+  procurementMethod: tender.procurementMethod ?? '',
+  costOfTenderDocument: tender.costOfTenderDocument ?? '',
+  bidValidity: tender.bidValidity ?? '',
+  bidSecurity: tender.bidSecurity ?? '',
+  contractPeriod: tender.contractPeriod ?? '',
+  performanceSecurity: tender.performanceSecurity ?? '',
+  paymentTerms: tender.paymentTerms ?? '',
+  keyDeliverables: tender.keyDeliverables ?? '',
+  technicalSpecifications: tender.technicalSpecifications ?? '',
+});
+
+const buildPayload = (values: TenderFormValues): TenderCreate => {
+  const payload: TenderCreate = {
+    title: values.title.trim(),
+    description: values.description.trim(),
+    location: values.location.trim(),
+    closingDate: ensureSecondsPrecision(values.closingDate),
+    contactInfo: values.contactInfo.trim(),
+    serviceId: values.serviceId,
+    status: values.status,
+    isFree: values.isFree,
+    referenceNumber: values.referenceNumber.trim(),
+  };
+
+  const optionalAssignments: Array<[OptionalTenderField, string | undefined]> = [
+    ['noticeNumber', values.noticeNumber],
+    ['productCategory', values.productCategory],
+    ['tenderType', values.tenderType],
+    ['procurementMethod', values.procurementMethod],
+    ['costOfTenderDocument', values.costOfTenderDocument],
+    ['bidValidity', values.bidValidity],
+    ['bidSecurity', values.bidSecurity],
+    ['contractPeriod', values.contractPeriod],
+    ['performanceSecurity', values.performanceSecurity],
+    ['paymentTerms', values.paymentTerms],
+    ['keyDeliverables', values.keyDeliverables],
+    ['technicalSpecifications', values.technicalSpecifications],
+  ];
+
+  optionalAssignments.forEach(([key, value]) => {
+    const trimmed = value?.trim();
+    if (trimmed) {
+      payload[key] = trimmed;
+    }
+  });
+
+  return payload;
+};
+
+const truncateText = (value: string | undefined, maxLength = 80) => {
+  if (!value) return '-';
+  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
+};
+
 export default function Tenders() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -122,33 +205,29 @@ export default function Tenders() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedTender, setSelectedTender] = useState<number | null>(null);
+  const [selectedTenderId, setSelectedTenderId] = useState<number | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  const [flatServices, setFlatServices] = useState<{ node: ServiceNode; depth: number }[]>([]);
-  const [servicesLoading, setServicesLoading] = useState<boolean>(false);
-  const flattenServicesTree = (
-    nodes: ServiceNode[],
-    depth = 0
-  ): { node: ServiceNode; depth: number }[] =>
-    nodes.flatMap((n) => [{ node: n, depth }, ...flattenServicesTree(n.services || [], depth + 1)]);
+  const [servicesLoading, setServicesLoading] = useState(false);
+  const [serviceTree, setServiceTree] = useState<ServiceNode[]>([]);
   const [file, setFile] = useState<File | null>(null);
 
   useEffect(() => {
-    // In production, get the agencyId from auth context/state
     const agencyId = 1;
     dispatch(fetchTenders({ agencyId, page, size: rowsPerPage }));
   }, [dispatch, page, rowsPerPage]);
 
   useEffect(() => {
-    // Load services from admin endpoint and keep only categoryId = 1
     const loadServices = async () => {
       setServicesLoading(true);
       try {
         const { data } = await adminApi.getServices();
-        const categoryOne = data.find((c) => c.categoryId === 1);
-        if (categoryOne) {
-          setFlatServices(flattenServicesTree(categoryOne.services || []));
+        const tenderCategory = data.find((category) => category.categoryId === 1);
+        if (!tenderCategory) {
+          toast.error('Tender services not found');
+          setServiceTree([]);
+          return;
         }
+        setServiceTree(tenderCategory.services || []);
       } catch (err) {
         console.error('Failed to load services', err);
         toast.error('Failed to load services');
@@ -158,6 +237,83 @@ export default function Tenders() {
     };
     loadServices();
   }, []);
+
+  const serviceLookup = useMemo(() => {
+    const map = new Map<number, { breadcrumb: string; node: ServiceNode }>();
+    const traverse = (nodes: ServiceNode[] = [], trail: string[] = []) => {
+      nodes.forEach((node) => {
+        const currentTrail = [...trail, node.name];
+        map.set(node.serviceId, {
+          breadcrumb: currentTrail.join(' / '),
+          node,
+        });
+        if (node.services?.length) {
+          traverse(node.services, currentTrail);
+        }
+      });
+    };
+    traverse(serviceTree);
+    return map;
+  }, [serviceTree]);
+
+  const renderServiceMenuItems = useCallback(() => {
+    const buildItems = (nodes: ServiceNode[] = [], depth = 0, trail: string[] = []) =>
+      nodes.flatMap((node) => {
+        const currentTrail = [...trail, node.name];
+        const items = [
+          <MenuItem
+            key={node.serviceId}
+            value={node.serviceId}
+            sx={{ pl: 2 + depth * 2, fontWeight: depth === 0 ? 600 : 400 }}
+          >
+            {currentTrail.join(' / ')}
+          </MenuItem>,
+        ];
+        if (node.services?.length) {
+          items.push(...buildItems(node.services, depth + 1, currentTrail));
+        }
+        return items;
+      });
+
+    return buildItems(serviceTree, 0, []);
+  }, [serviceTree]);
+
+  const formik = useFormik<TenderFormValues>({
+    initialValues: defaultFormValues,
+    validationSchema,
+    enableReinitialize: false,
+    validateOnMount: true,
+    onSubmit: async (values, helpers) => {
+      try {
+        const agencyId = 1;
+        const payload = buildPayload(values);
+        if (selectedTenderId) {
+          await tenderApi.update(agencyId, selectedTenderId, payload);
+          toast.success('Tender updated successfully');
+        } else {
+          const { data } = await tenderApi.create(agencyId, payload);
+          if (file) {
+            try {
+              await tenderApi.uploadDocument(agencyId, data.id, file);
+              toast.success('Tender and file uploaded successfully');
+            } catch (uploadError) {
+              console.error(uploadError);
+              toast.warn('Tender created, but file upload failed');
+            }
+          } else {
+            toast.success('Tender created successfully');
+          }
+        }
+        dispatch(fetchTenders({ agencyId, page, size: rowsPerPage }));
+        helpers.resetForm({ values: defaultFormValues });
+        setFile(null);
+        setOpenDialog(false);
+        setSelectedTenderId(null);
+      } catch (submitError) {
+        toast.error(selectedTenderId ? 'Failed to update tender' : 'Failed to create tender');
+      }
+    },
+  });
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -170,261 +326,53 @@ export default function Tenders() {
 
   const handleOpenDialog = (tenderId?: number) => {
     if (tenderId) {
-      setSelectedTender(tenderId);
+      const tenderToEdit = tenders.find((t) => t.id === tenderId);
+      if (tenderToEdit) {
+        formik.setValues(mapTenderToForm(tenderToEdit), true);
+        setSelectedTenderId(tenderId);
+        setFile(null);
+      }
     } else {
-      setSelectedTender(null);
+      formik.resetForm({ values: defaultFormValues });
+      setSelectedTenderId(null);
+      setFile(null);
     }
     setOpenDialog(true);
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setSelectedTender(null);
-    formik.resetForm();
+    setSelectedTenderId(null);
+    formik.resetForm({ values: defaultFormValues });
+    setFile(null);
   };
 
   const handleDeleteClick = (tenderId: number) => {
-    setSelectedTender(tenderId);
+    setSelectedTenderId(tenderId);
     setDeleteConfirmOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
-    if (!selectedTender) return;
-
+    if (!selectedTenderId) return;
     try {
-      // In production, get the agencyId from auth context/state
       const agencyId = 1;
-      await tenderApi.delete(agencyId, selectedTender);
+      await tenderApi.delete(agencyId, selectedTenderId);
       dispatch(fetchTenders({ agencyId, page, size: rowsPerPage }));
       toast.success('Tender deleted successfully');
-    } catch (error) {
+    } catch (deleteError) {
       toast.error('Failed to delete tender');
     } finally {
       setDeleteConfirmOpen(false);
-      setSelectedTender(null);
+      setSelectedTenderId(null);
     }
   };
 
-  const [advancedMode, setAdvancedMode] = useState(false);
-  const formik = useFormik({
-    initialValues: {
-      // Simple legacy fields
-      title: '',
-      description: '',
-      location: '',
-      closingDate: '',
-      contactInfo: '',
-      serviceId: 1,
-      questionDeadline: '',
-      isFree: false,
-      // Advanced nested fields (all optional)
-      summary: {
-        referenceNo: '',
-        publishedOn: '',
-        bidDeadline: '',
-        category: '',
-        type: '',
-        procurementMethod: '',
-        noticeNo: '',
-        documentCost: '',
-        location: '',
-      },
-      financials: {
-        bidValidityDays: undefined as number | undefined,
-        bidSecurityAmount: undefined as number | undefined,
-        contractPeriodDays: undefined as number | undefined,
-        performanceSecurityPercent: undefined as number | undefined,
-        paymentTerms: '',
-      },
-      scope: {
-        standards: [] as string[],
-        earthworkExcavationCuM: undefined as number | undefined,
-        concreteM35SqM: undefined as number | undefined,
-        rccCulvertsCount: undefined as number | undefined,
-        stormWaterDrainKm: undefined as number | undefined,
-        warrantyMonths: undefined as number | undefined,
-      },
-      eligibility: {
-        registrationCertificateRequired: false,
-        similarProjectMinValue: undefined as number | undefined,
-        turnoverMinAvg: undefined as number | undefined,
-      },
-      timeline: {
-        preBidMeeting: '',
-        siteVisitStart: '',
-        siteVisitEnd: '',
-        clarificationDeadline: '',
-        bidOpeningDate: '',
-      },
-      submission: {
-        documentLink: '',
-        submissionMode: 'Physical',
-        submissionAddress: '',
-      },
-      issuingAuthority: {
-        organization: '',
-        department: '',
-        address: '',
-        tenderLocation: '',
-        languageOfBids: '',
-        governingLaw: '',
-      },
-      status: 'OPEN',
-    },
-    validationSchema,
-    onSubmit: async (values) => {
-      try {
-        // In production, get the agencyId from auth context/state
-        const agencyId = 1;
-        const formatCurrency = (input?: string | number | null) => {
-          if (input === undefined || input === null) return undefined;
-          const asString = String(input).trim();
-          if (!asString) return undefined;
-          return /^([A-Z]{3})/.test(asString) ? asString : `ETB ${asString}`;
-        };
-
-        const summaryPayload = {
-          referenceNo: values.summary.referenceNo || values.title,
-          publishedOn: values.summary.publishedOn || new Date().toISOString().split('T')[0],
-          bidDeadline: values.summary.bidDeadline || values.closingDate,
-          category: values.summary.category || 'General',
-          type: values.summary.type || 'National',
-          procurementMethod: values.summary.procurementMethod || 'Open Tender',
-          noticeNo: values.summary.noticeNo || undefined,
-          documentCost: values.summary.documentCost || undefined,
-          location: values.summary.location || values.location,
-        };
-
-        const financialPayload = {
-          bidValidityDays: values.financials.bidValidityDays ?? undefined,
-          bidSecurityAmount: values.financials.bidSecurityAmount ?? undefined,
-          contractPeriodDays: values.financials.contractPeriodDays ?? undefined,
-          performanceSecurityPercent: values.financials.performanceSecurityPercent ?? undefined,
-          paymentTerms: values.financials.paymentTerms || 'As per tender',
-        };
-
-        const scopePayload = {
-          standards: values.scope.standards.length ? values.scope.standards : ['GENERAL'],
-          earthworkExcavationCuM: values.scope.earthworkExcavationCuM,
-          concreteM35SqM: values.scope.concreteM35SqM,
-          rccCulvertsCount: values.scope.rccCulvertsCount,
-          stormWaterDrainKm: values.scope.stormWaterDrainKm,
-          warrantyMonths: values.scope.warrantyMonths,
-        };
-
-        const eligibilityPayload = {
-          registrationCertificateRequired: values.eligibility.registrationCertificateRequired || false,
-          similarProjectMinValue: values.eligibility.similarProjectMinValue,
-          turnoverMinAvg: values.eligibility.turnoverMinAvg,
-        };
-
-        const timelinePayload = {
-          preBidMeeting: values.timeline.preBidMeeting || undefined,
-          siteVisitStart: values.timeline.siteVisitStart || undefined,
-          siteVisitEnd: values.timeline.siteVisitEnd || undefined,
-          clarificationDeadline: values.timeline.clarificationDeadline || undefined,
-          bidOpeningDate: values.timeline.bidOpeningDate || undefined,
-        };
-
-        const submissionPayload = {
-          documentLink: values.submission.documentLink || undefined,
-          submissionMode: values.submission.submissionMode || 'Physical',
-          submissionAddress: values.submission.submissionAddress || undefined,
-        };
-
-        const issuingAuthorityPayload = {
-          organization: values.issuingAuthority.organization || 'Unknown Org',
-          department: values.issuingAuthority.department || undefined,
-          address: values.issuingAuthority.address || undefined,
-          tenderLocation: values.issuingAuthority.tenderLocation || values.location,
-          languageOfBids: values.issuingAuthority.languageOfBids || undefined,
-          governingLaw: values.issuingAuthority.governingLaw || undefined,
-        };
-
-        const derivedBidValidity = typeof financialPayload.bidValidityDays === 'number' && financialPayload.bidValidityDays > 0
-          ? `${financialPayload.bidValidityDays} days`
-          : undefined;
-        const derivedBidSecurity = formatCurrency(financialPayload.bidSecurityAmount ?? undefined);
-        const derivedContractPeriod = typeof financialPayload.contractPeriodDays === 'number' && financialPayload.contractPeriodDays > 0
-          ? `${financialPayload.contractPeriodDays} days`
-          : undefined;
-        const derivedPerformanceSecurity = typeof financialPayload.performanceSecurityPercent === 'number' && financialPayload.performanceSecurityPercent > 0
-          ? `${financialPayload.performanceSecurityPercent}% of contract value`
-          : undefined;
-        const derivedKeyDeliverables = scopePayload.standards && scopePayload.standards.length
-          ? `Standards: ${scopePayload.standards.join(', ')}`
-          : undefined;
-        const scopeHighlights: string[] = [];
-        if (scopePayload.earthworkExcavationCuM)
-          scopeHighlights.push(`Earthwork excavation ≥ ${scopePayload.earthworkExcavationCuM} CuM`);
-        if (scopePayload.concreteM35SqM)
-          scopeHighlights.push(`Concrete M35 ≥ ${scopePayload.concreteM35SqM} SqM`);
-        if (scopePayload.rccCulvertsCount)
-          scopeHighlights.push(`RCC culverts count: ${scopePayload.rccCulvertsCount}`);
-        if (scopePayload.stormWaterDrainKm)
-          scopeHighlights.push(`Storm water drain ≥ ${scopePayload.stormWaterDrainKm} km`);
-        if (scopePayload.warrantyMonths)
-          scopeHighlights.push(`Warranty ≥ ${scopePayload.warrantyMonths} months`);
-        const derivedTechnicalSpecifications = scopeHighlights.length ? scopeHighlights.join('; ') : undefined;
-
-        // Build nested payload regardless of mode
-        const nestedPayload = {
-          title: values.title,
-          description: values.description,
-          location: values.location,
-          closingDate: values.closingDate,
-          contactInfo: values.contactInfo,
-          questionDeadline: values.questionDeadline,
-          serviceId: values.serviceId,
-          isFree: values.isFree,
-          status: values.status as any,
-          summary: summaryPayload,
-          financials: financialPayload,
-          scope: scopePayload,
-          eligibility: eligibilityPayload,
-          timeline: timelinePayload,
-          submission: submissionPayload,
-          issuingAuthority: issuingAuthorityPayload,
-          categoryId: values.serviceId,
-          referenceNumber: summaryPayload.referenceNo,
-          noticeNumber: summaryPayload.noticeNo,
-          productCategory: summaryPayload.category,
-          tenderType: summaryPayload.type,
-          procurementMethod: summaryPayload.procurementMethod,
-          costOfTenderDocument: formatCurrency(summaryPayload.documentCost ?? undefined),
-          bidValidity: derivedBidValidity,
-          bidSecurity: derivedBidSecurity,
-          contractPeriod: derivedContractPeriod,
-          performanceSecurity: derivedPerformanceSecurity,
-          paymentTerms: financialPayload.paymentTerms,
-          keyDeliverables: derivedKeyDeliverables,
-          technicalSpecifications: derivedTechnicalSpecifications,
-        };
-        if (selectedTender) {
-          await tenderApi.update(agencyId, selectedTender, nestedPayload as any);
-          toast.success('Tender updated successfully');
-        } else {
-          const { data: created } = await tenderApi.create(agencyId, nestedPayload as any);
-          // If a file is provided, upload it after creation
-          if (file) {
-            try {
-              await tenderApi.uploadDocument(agencyId, created.id, file);
-              toast.success('Tender and file uploaded successfully');
-            } catch (uploadErr) {
-              console.error(uploadErr);
-              toast.warn('Tender created, but file upload failed');
-            }
-          } else {
-            toast.success('Tender created successfully');
-          }
-        }
-        dispatch(fetchTenders({ agencyId, page, size: rowsPerPage }));
-        handleCloseDialog();
-      } catch (error) {
-        toast.error(selectedTender ? 'Failed to update tender' : 'Failed to create tender');
-      }
-    },
-  });
+  const safeFormatDate = (value?: string) => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.valueOf())) return '-';
+    return format(parsed, 'MMM d, yyyy');
+  };
 
   if (loading) {
     return (
@@ -458,17 +406,20 @@ export default function Tenders() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>Reference</TableCell>
+                  <TableCell>Title</TableCell>
+                  <TableCell>Description</TableCell>
                   <TableCell>Location</TableCell>
-                  <TableCell>Published</TableCell>
-                  <TableCell>Bid Deadline</TableCell>
+                  <TableCell>Service</TableCell>
+                  <TableCell>Closing Date</TableCell>
                   <TableCell>Status</TableCell>
+                  <TableCell>Reference</TableCell>
                   <TableCell align="right">Actions</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {tenders.map((tender) => {
                   const StatusIcon = statusIcons[tender.status];
+                  const serviceOption = serviceLookup.get(tender.serviceId ?? tender.categoryId ?? 0);
                   return (
                     <TableRow
                       key={tender.id}
@@ -476,10 +427,16 @@ export default function Tenders() {
                       sx={{ cursor: 'pointer' }}
                       onClick={() => navigate(`/tenders/${tender.id}`)}
                     >
-                      <TableCell>{(tender as any).summary?.referenceNo ?? '-'}</TableCell>
-                      <TableCell>{(tender as any).summary?.location ?? '-'}</TableCell>
-                      <TableCell>{(tender as any).summary?.publishedOn ? format(new Date((tender as any).summary.publishedOn), 'MMM d, yyyy') : '-'}</TableCell>
-                      <TableCell>{(tender as any).summary?.bidDeadline ? format(new Date((tender as any).summary.bidDeadline), 'MMM d, yyyy') : '-'}</TableCell>
+                      <TableCell>{tender.title || '-'}</TableCell>
+                      <TableCell>{truncateText(tender.description, 100)}</TableCell>
+                      <TableCell>{tender.location || '-'}</TableCell>
+                      <TableCell>
+                        {serviceOption?.breadcrumb ??
+                          (typeof tender.serviceId === 'number'
+                            ? `Service #${tender.serviceId}`
+                            : 'Not provided')}
+                      </TableCell>
+                      <TableCell>{safeFormatDate(tender.closingDate)}</TableCell>
                       <TableCell>
                         <Chip
                           icon={<StatusIcon size={16} />}
@@ -494,11 +451,12 @@ export default function Tenders() {
                           }}
                         />
                       </TableCell>
+                      <TableCell>{tender.referenceNumber || '-'}</TableCell>
                       <TableCell align="right">
                         <IconButton
                           size="small"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={(event) => {
+                            event.stopPropagation();
                             handleOpenDialog(tender.id);
                           }}
                         >
@@ -507,8 +465,8 @@ export default function Tenders() {
                         <IconButton
                           size="small"
                           color="error"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={(event) => {
+                            event.stopPropagation();
                             handleDeleteClick(tender.id);
                           }}
                         >
@@ -523,7 +481,7 @@ export default function Tenders() {
           </TableContainer>
           <TablePagination
             component="div"
-            count={-1}
+            count={tenders.length}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -536,16 +494,21 @@ export default function Tenders() {
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
         <form onSubmit={formik.handleSubmit}>
           <DialogTitle>
-            {selectedTender ? 'Edit Tender' : 'Create New Tender'}
+            {selectedTenderId ? 'Edit Tender' : 'Create New Tender'}
           </DialogTitle>
           <DialogContent>
             <Grid container spacing={3} sx={{ mt: 1 }}>
-              {/* Simple legacy fields */}
+              <Grid item xs={12}>
+                <Alert severity="info">
+                  Fields marked * are required. Please provide Title, Description, Location, Closing Date, Contact Info, Tender Service, Status, and Reference Number.
+                </Alert>
+              </Grid>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
                   name="title"
                   label="Title"
+                  required
                   value={formik.values.title}
                   onChange={formik.handleChange}
                   error={formik.touched.title && Boolean(formik.errors.title)}
@@ -556,9 +519,10 @@ export default function Tenders() {
                 <TextField
                   fullWidth
                   multiline
-                  rows={4}
+                  minRows={3}
                   name="description"
                   label="Description"
+                  required
                   value={formik.values.description}
                   onChange={formik.handleChange}
                   error={formik.touched.description && Boolean(formik.errors.description)}
@@ -570,6 +534,7 @@ export default function Tenders() {
                   fullWidth
                   name="location"
                   label="Location"
+                  required
                   value={formik.values.location}
                   onChange={formik.handleChange}
                   error={formik.touched.location && Boolean(formik.errors.location)}
@@ -579,30 +544,86 @@ export default function Tenders() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  name="serviceId"
-                  label="Category"
-                  select
-                  value={formik.values.serviceId}
+                  type="datetime-local"
+                  name="closingDate"
+                  label="Closing Date"
+                  InputLabelProps={{ shrink: true }}
+                  required
+                  value={formik.values.closingDate}
                   onChange={formik.handleChange}
+                  error={formik.touched.closingDate && Boolean(formik.errors.closingDate)}
+                  helperText={formik.touched.closingDate && formik.errors.closingDate}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="contactInfo"
+                  label="Contact Info"
+                  required
+                  value={formik.values.contactInfo}
+                  onChange={formik.handleChange}
+                  error={formik.touched.contactInfo && Boolean(formik.errors.contactInfo)}
+                  helperText={formik.touched.contactInfo && formik.errors.contactInfo}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  select
+                  name="serviceId"
+                  label="Tender Service"
+                  required
+                  value={formik.values.serviceId}
+                  onChange={(event) => formik.setFieldValue('serviceId', Number(event.target.value))}
                   error={formik.touched.serviceId && Boolean(formik.errors.serviceId)}
-                  helperText={servicesLoading ? 'Loading categories…' : formik.touched.serviceId && (formik.errors as any).serviceId}
+                  helperText={
+                    servicesLoading
+                      ? 'Loading services…'
+                      : (formik.touched.serviceId && formik.errors.serviceId) ||
+                        'Choose a nested service from the Tender catalogue'
+                  }
                   disabled={servicesLoading}
                 >
-                  {servicesLoading ? (
-                    <MenuItem value={formik.values.serviceId} disabled>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <CircularProgress size={16} />
-                        <span>Loading…</span>
-                      </Box>
-                    </MenuItem>
-                  ) : (
-                    flatServices.map(({ node, depth }) => (
-                      <MenuItem key={node.serviceId} value={node.serviceId} sx={{ pl: 1 + depth * 2 }}>
-                        {depth > 0 ? '— '.repeat(depth) : ''}
-                        {node.name}
+                  <MenuItem value={0} disabled>
+                    {servicesLoading ? 'Loading…' : 'Select a service'}
+                  </MenuItem>
+                  {!servicesLoading &&
+                    !serviceLookup.has(formik.values.serviceId) &&
+                    formik.values.serviceId !== 0 && (
+                      <MenuItem value={formik.values.serviceId}>
+                        Current service (ID: {formik.values.serviceId})
                       </MenuItem>
-                    ))
-                  )}
+                    )}
+                  {renderServiceMenuItems()}
+                </TextField>
+              </Grid>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formik.values.isFree}
+                      onChange={(event) => formik.setFieldValue('isFree', event.target.checked)}
+                    />
+                  }
+                  label="This tender is free"
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="status"
+                  label="Status"
+                  select
+                  required
+                  value={formik.values.status}
+                  onChange={formik.handleChange}
+                  error={formik.touched.status && Boolean(formik.errors.status)}
+                  helperText={formik.touched.status && formik.errors.status}
+                >
+                  <MenuItem value="OPEN">Open</MenuItem>
+                  <MenuItem value="CLOSED">Closed</MenuItem>
+                  <MenuItem value="CANCELLED">Cancelled</MenuItem>
                 </TextField>
               </Grid>
               <Grid item xs={12} md={6}>
@@ -611,289 +632,173 @@ export default function Tenders() {
                   <input
                     hidden
                     type="file"
-                    name="file"
-                    onChange={(e) => {
-                      const f = e.currentTarget.files?.[0] || null;
-                      setFile(f);
+                    onChange={(event) => {
+                      const selectedFile = event.currentTarget.files?.[0] ?? null;
+                      setFile(selectedFile);
                     }}
                   />
                 </Button>
               </Grid>
-              {/* Advanced toggle */}
-              <Grid item xs={12}>
-                <Button variant="text" onClick={() => setAdvancedMode((m) => !m)}>
-                  {advancedMode ? 'Hide Advanced Fields' : 'Show Advanced Fields'}
-                </Button>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="referenceNumber"
+                  label="Reference Number"
+                  required
+                  value={formik.values.referenceNumber}
+                  onChange={formik.handleChange}
+                  error={formik.touched.referenceNumber && Boolean(formik.errors.referenceNumber)}
+                  helperText={formik.touched.referenceNumber && formik.errors.referenceNumber}
+                />
               </Grid>
-              {advancedMode && (
-                <>
-                  {/* Summary Advanced */}
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="summary.referenceNo" label="Reference No" value={(formik.values as any).summary.referenceNo} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="summary.category" label="Category" value={(formik.values as any).summary.category} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="summary.type" label="Type" value={(formik.values as any).summary.type} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="summary.procurementMethod" label="Procurement Method" value={(formik.values as any).summary.procurementMethod} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="summary.noticeNo" label="Notice No" value={(formik.values as any).summary.noticeNo} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="summary.documentCost" label="Document Cost" value={(formik.values as any).summary.documentCost as any} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="summary.location" label="Location Override" value={(formik.values as any).summary.location} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth type="date" name="summary.publishedOn" label="Published On" value={(formik.values as any).summary.publishedOn} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth type="datetime-local" name="summary.bidDeadline" label="Bid Deadline" value={(formik.values as any).summary.bidDeadline} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-                  </Grid>
-                </>
-              )}
-              {advancedMode && (
-                <>
-                  {/* Financials */}
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth type="number" name="financials.bidValidityDays" label="Bid Validity (days)" value={(formik.values as any).financials.bidValidityDays ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth type="number" name="financials.bidSecurityAmount" label="Bid Security Amount" value={(formik.values as any).financials.bidSecurityAmount ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth type="number" name="financials.contractPeriodDays" label="Contract Period (days)" value={(formik.values as any).financials.contractPeriodDays ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth type="number" name="financials.performanceSecurityPercent" label="Performance Security (%)" value={(formik.values as any).financials.performanceSecurityPercent ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={8}>
-                    <TextField fullWidth name="financials.paymentTerms" label="Payment Terms" value={(formik.values as any).financials.paymentTerms} onChange={formik.handleChange} />
-                  </Grid>
-
-                  {/* Scope */}
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      name="scope.standards"
-                      label="Standards (comma separated)"
-                      value={((formik.values as any).scope.standards as string[]).join(', ')}
-                      onChange={(e) =>
-                        formik.setFieldValue(
-                          'scope.standards',
-                          e.target.value
-                            .split(',')
-                            .map((s) => s.trim())
-                            .filter(Boolean)
-                        )
-                      }
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField fullWidth type="number" name="scope.earthworkExcavationCuM" label="Earthwork (CuM)" value={(formik.values as any).scope.earthworkExcavationCuM ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField fullWidth type="number" name="scope.concreteM35SqM" label="Concrete M35 (SqM)" value={(formik.values as any).scope.concreteM35SqM ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField fullWidth type="number" name="scope.rccCulvertsCount" label="RCC Culverts (count)" value={(formik.values as any).scope.rccCulvertsCount ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField fullWidth type="number" name="scope.stormWaterDrainKm" label="Storm Water Drain (km)" value={(formik.values as any).scope.stormWaterDrainKm ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField fullWidth type="number" name="scope.warrantyMonths" label="Warranty (months)" value={(formik.values as any).scope.warrantyMonths ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-
-                  {/* Eligibility */}
-                  <Grid item xs={12} md={6}>
-                    <FormControlLabel
-                      control={<Checkbox checked={(formik.values as any).eligibility.registrationCertificateRequired || false} onChange={(e) => formik.setFieldValue('eligibility.registrationCertificateRequired', e.target.checked)} />}
-                      label="Registration Certificate Required"
-                    />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField fullWidth type="number" name="eligibility.similarProjectMinValue" label="Similar Project Min Value" value={(formik.values as any).eligibility.similarProjectMinValue ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField fullWidth type="number" name="eligibility.turnoverMinAvg" label="Turnover Min Avg" value={(formik.values as any).eligibility.turnoverMinAvg ?? ''} onChange={formik.handleChange} />
-                  </Grid>
-
-                  {/* Timeline */}
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth type="date" name="timeline.preBidMeeting" label="Pre-bid Meeting" value={(formik.values as any).timeline.preBidMeeting} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth type="date" name="timeline.siteVisitStart" label="Site Visit Start" value={(formik.values as any).timeline.siteVisitStart} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <TextField fullWidth type="date" name="timeline.siteVisitEnd" label="Site Visit End" value={(formik.values as any).timeline.siteVisitEnd} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth type="date" name="timeline.clarificationDeadline" label="Clarification Deadline" value={(formik.values as any).timeline.clarificationDeadline} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth type="datetime-local" name="timeline.bidOpeningDate" label="Bid Opening Date" value={(formik.values as any).timeline.bidOpeningDate} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-                  </Grid>
-
-                  {/* Submission */}
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="submission.documentLink" label="Document Link" value={(formik.values as any).submission.documentLink} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="submission.submissionMode" label="Submission Mode" value={(formik.values as any).submission.submissionMode} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField fullWidth name="submission.submissionAddress" label="Submission Address" value={(formik.values as any).submission.submissionAddress} onChange={formik.handleChange} />
-                  </Grid>
-
-                  {/* Issuing Authority */}
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="issuingAuthority.organization" label="Organization" value={(formik.values as any).issuingAuthority.organization} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="issuingAuthority.department" label="Department" value={(formik.values as any).issuingAuthority.department} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField fullWidth name="issuingAuthority.address" label="Address" value={(formik.values as any).issuingAuthority.address} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <TextField fullWidth name="issuingAuthority.tenderLocation" label="Tender Location" value={(formik.values as any).issuingAuthority.tenderLocation} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField fullWidth name="issuingAuthority.languageOfBids" label="Language of Bids" value={(formik.values as any).issuingAuthority.languageOfBids} onChange={formik.handleChange} />
-                  </Grid>
-                  <Grid item xs={12} md={3}>
-                    <TextField fullWidth name="issuingAuthority.governingLaw" label="Governing Law" value={(formik.values as any).issuingAuthority.governingLaw} onChange={formik.handleChange} />
-                  </Grid>
-                </>
-              )}
-              <Grid item xs={12} md={4}>
-                <TextField fullWidth type="number" name="financials.bidValidityDays" label="Bid Validity (days)" value={(formik.values as any).financials.bidValidityDays} onChange={formik.handleChange} />
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="noticeNumber"
+                  label="Notice Number"
+                  value={formik.values.noticeNumber}
+                  onChange={formik.handleChange}
+                  error={formik.touched.noticeNumber && Boolean(formik.errors.noticeNumber)}
+                  helperText={formik.touched.noticeNumber && formik.errors.noticeNumber}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="productCategory"
+                  label="Product Category"
+                  value={formik.values.productCategory}
+                  onChange={formik.handleChange}
+                  error={formik.touched.productCategory && Boolean(formik.errors.productCategory)}
+                  helperText={formik.touched.productCategory && formik.errors.productCategory}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="tenderType"
+                  label="Tender Type"
+                  value={formik.values.tenderType}
+                  onChange={formik.handleChange}
+                  error={formik.touched.tenderType && Boolean(formik.errors.tenderType)}
+                  helperText={formik.touched.tenderType && formik.errors.tenderType}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="procurementMethod"
+                  label="Procurement Method"
+                  value={formik.values.procurementMethod}
+                  onChange={formik.handleChange}
+                  error={formik.touched.procurementMethod && Boolean(formik.errors.procurementMethod)}
+                  helperText={formik.touched.procurementMethod && formik.errors.procurementMethod}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="costOfTenderDocument"
+                  label="Cost of Tender Document"
+                  value={formik.values.costOfTenderDocument}
+                  onChange={formik.handleChange}
+                  error={formik.touched.costOfTenderDocument && Boolean(formik.errors.costOfTenderDocument)}
+                  helperText={formik.touched.costOfTenderDocument && formik.errors.costOfTenderDocument}
+                />
               </Grid>
               <Grid item xs={12} md={4}>
-                <TextField fullWidth type="number" name="financials.bidSecurityAmount" label="Bid Security Amount" value={(formik.values as any).financials.bidSecurityAmount} onChange={formik.handleChange} />
+                <TextField
+                  fullWidth
+                  name="bidValidity"
+                  label="Bid Validity"
+                  value={formik.values.bidValidity}
+                  onChange={formik.handleChange}
+                  error={formik.touched.bidValidity && Boolean(formik.errors.bidValidity)}
+                  helperText={formik.touched.bidValidity && formik.errors.bidValidity}
+                />
               </Grid>
               <Grid item xs={12} md={4}>
-                <TextField fullWidth type="number" name="financials.contractPeriodDays" label="Contract Period (days)" value={(formik.values as any).financials.contractPeriodDays} onChange={formik.handleChange} />
+                <TextField
+                  fullWidth
+                  name="bidSecurity"
+                  label="Bid Security"
+                  value={formik.values.bidSecurity}
+                  onChange={formik.handleChange}
+                  error={formik.touched.bidSecurity && Boolean(formik.errors.bidSecurity)}
+                  helperText={formik.touched.bidSecurity && formik.errors.bidSecurity}
+                />
               </Grid>
               <Grid item xs={12} md={4}>
-                <TextField fullWidth type="number" name="financials.performanceSecurityPercent" label="Performance Security (%)" value={(formik.values as any).financials.performanceSecurityPercent} onChange={formik.handleChange} />
+                <TextField
+                  fullWidth
+                  name="contractPeriod"
+                  label="Contract Period"
+                  value={formik.values.contractPeriod}
+                  onChange={formik.handleChange}
+                  error={formik.touched.contractPeriod && Boolean(formik.errors.contractPeriod)}
+                  helperText={formik.touched.contractPeriod && formik.errors.contractPeriod}
+                />
               </Grid>
-              <Grid item xs={12} md={8}>
-                <TextField fullWidth name="financials.paymentTerms" label="Payment Terms" value={(formik.values as any).financials.paymentTerms} onChange={formik.handleChange} />
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="performanceSecurity"
+                  label="Performance Security"
+                  value={formik.values.performanceSecurity}
+                  onChange={formik.handleChange}
+                  error={formik.touched.performanceSecurity && Boolean(formik.errors.performanceSecurity)}
+                  helperText={formik.touched.performanceSecurity && formik.errors.performanceSecurity}
+                />
               </Grid>
-
-              {/* Scope */}
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="paymentTerms"
+                  label="Payment Terms"
+                  value={formik.values.paymentTerms}
+                  onChange={formik.handleChange}
+                  error={formik.touched.paymentTerms && Boolean(formik.errors.paymentTerms)}
+                  helperText={formik.touched.paymentTerms && formik.errors.paymentTerms}
+                />
+              </Grid>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  name="scope.standards"
-                  label="Standards (comma separated)"
-                  value={((formik.values as any).scope.standards as string[]).join(', ')}
-                  onChange={(e) =>
-                    formik.setFieldValue(
-                      'scope.standards',
-                      e.target.value
-                        .split(',')
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                    )
-                  }
+                  multiline
+                  minRows={2}
+                  name="keyDeliverables"
+                  label="Key Deliverables"
+                  value={formik.values.keyDeliverables}
+                  onChange={formik.handleChange}
+                  error={formik.touched.keyDeliverables && Boolean(formik.errors.keyDeliverables)}
+                  helperText={formik.touched.keyDeliverables && formik.errors.keyDeliverables}
                 />
               </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField fullWidth type="number" name="scope.earthworkExcavationCuM" label="Earthwork (CuM)" value={(formik.values as any).scope.earthworkExcavationCuM ?? ''} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField fullWidth type="number" name="scope.concreteM35SqM" label="Concrete M35 (SqM)" value={(formik.values as any).scope.concreteM35SqM ?? ''} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField fullWidth type="number" name="scope.rccCulvertsCount" label="RCC Culverts (count)" value={(formik.values as any).scope.rccCulvertsCount ?? ''} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField fullWidth type="number" name="scope.stormWaterDrainKm" label="Storm Water Drain (km)" value={(formik.values as any).scope.stormWaterDrainKm ?? ''} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField fullWidth type="number" name="scope.warrantyMonths" label="Warranty (months)" value={(formik.values as any).scope.warrantyMonths ?? ''} onChange={formik.handleChange} />
-              </Grid>
-
-              {/* Eligibility */}
-              <Grid item xs={12} md={6}>
-                <FormControlLabel
-                  control={<Checkbox checked={(formik.values as any).eligibility.registrationCertificateRequired || false} onChange={(e) => formik.setFieldValue('eligibility.registrationCertificateRequired', e.target.checked)} />}
-                  label="Registration Certificate Required"
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  name="technicalSpecifications"
+                  label="Technical Specifications"
+                  value={formik.values.technicalSpecifications}
+                  onChange={formik.handleChange}
+                  error={formik.touched.technicalSpecifications && Boolean(formik.errors.technicalSpecifications)}
+                  helperText={formik.touched.technicalSpecifications && formik.errors.technicalSpecifications}
                 />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField fullWidth type="number" name="eligibility.similarProjectMinValue" label="Similar Project Min Value" value={(formik.values as any).eligibility.similarProjectMinValue ?? ''} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField fullWidth type="number" name="eligibility.turnoverMinAvg" label="Turnover Min Avg" value={(formik.values as any).eligibility.turnoverMinAvg ?? ''} onChange={formik.handleChange} />
-              </Grid>
-
-              {/* Timeline */}
-              <Grid item xs={12} md={4}>
-                <TextField fullWidth type="date" name="timeline.preBidMeeting" label="Pre-bid Meeting" value={(formik.values as any).timeline.preBidMeeting} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField fullWidth type="date" name="timeline.siteVisitStart" label="Site Visit Start" value={(formik.values as any).timeline.siteVisitStart} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-              </Grid>
-              <Grid item xs={12} md={4}>
-                <TextField fullWidth type="date" name="timeline.siteVisitEnd" label="Site Visit End" value={(formik.values as any).timeline.siteVisitEnd} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField fullWidth type="date" name="timeline.clarificationDeadline" label="Clarification Deadline" value={(formik.values as any).timeline.clarificationDeadline} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField fullWidth type="datetime-local" name="timeline.bidOpeningDate" label="Bid Opening Date" value={(formik.values as any).timeline.bidOpeningDate} onChange={formik.handleChange} InputLabelProps={{ shrink: true }} />
-              </Grid>
-
-              {/* Submission */}
-              <Grid item xs={12} md={6}>
-                <TextField fullWidth name="submission.documentLink" label="Document Link" value={(formik.values as any).submission.documentLink} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField fullWidth name="submission.submissionMode" label="Submission Mode" value={(formik.values as any).submission.submissionMode} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField fullWidth name="submission.submissionAddress" label="Submission Address" value={(formik.values as any).submission.submissionAddress} onChange={formik.handleChange} />
-              </Grid>
-
-              {/* Issuing Authority */}
-              <Grid item xs={12} md={6}>
-                <TextField fullWidth name="issuingAuthority.organization" label="Organization" value={(formik.values as any).issuingAuthority.organization} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField fullWidth name="issuingAuthority.department" label="Department" value={(formik.values as any).issuingAuthority.department} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField fullWidth name="issuingAuthority.address" label="Address" value={(formik.values as any).issuingAuthority.address} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <TextField fullWidth name="issuingAuthority.tenderLocation" label="Tender Location" value={(formik.values as any).issuingAuthority.tenderLocation} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField fullWidth name="issuingAuthority.languageOfBids" label="Language of Bids" value={(formik.values as any).issuingAuthority.languageOfBids} onChange={formik.handleChange} />
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <TextField fullWidth name="issuingAuthority.governingLaw" label="Governing Law" value={(formik.values as any).issuingAuthority.governingLaw} onChange={formik.handleChange} />
               </Grid>
             </Grid>
           </DialogContent>
           <DialogActions>
-            <Button onClick={handleCloseDialog}>Cancel</Button>
+            <Button onClick={handleCloseDialog} disabled={formik.isSubmitting}>
+              Cancel
+            </Button>
             <Button
               variant="contained"
               type="submit"
-              disabled={!formik.dirty || !formik.isValid}
+              disabled={formik.isSubmitting || !formik.isValid}
             >
-              {selectedTender ? 'Update' : 'Create'}
+              {selectedTenderId ? 'Update' : 'Create'}
             </Button>
           </DialogActions>
         </form>

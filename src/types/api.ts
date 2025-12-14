@@ -19,62 +19,16 @@ export interface AgencyRegistration {
 }
 
 // Tender Types
-export interface Tender {
-  id: number;
+interface TenderCore {
   title: string;
   description: string;
   location: string;
-  datePosted: string;
   closingDate: string;
   contactInfo: string;
+  serviceId: number;
   status: 'OPEN' | 'CLOSED' | 'CANCELLED';
-  serviceId: number;
-  documentPath?: string;
-  questionDeadline: string;
-  /** Indicates whether the tender is free (no associated fee/cost). */
   isFree: boolean;
-  /** Optional category identifier returned by newer API versions. */
-  categoryId?: number;
-  /** Business reference number shared with bidders. */
-  referenceNumber?: string;
-  /** Official notice number assigned by the issuer. */
-  noticeNumber?: string;
-  /** High-level product category descriptor. */
-  productCategory?: string;
-  /** Tender type label (e.g., Open International). */
-  tenderType?: string;
-  /** Procurement method label (e.g., Open Tender). */
-  procurementMethod?: string;
-  /** Published cost of the tender document (keep as formatted string). */
-  costOfTenderDocument?: string;
-  /** Bid validity window expressed as free-form text. */
-  bidValidity?: string;
-  /** Bid security requirement expressed as formatted text. */
-  bidSecurity?: string;
-  /** Contract period window expressed as formatted text. */
-  contractPeriod?: string;
-  /** Performance security requirement expressed as formatted text. */
-  performanceSecurity?: string;
-  /** Payment terms shared with bidders. */
-  paymentTerms?: string;
-  /** Short description of the expected deliverables. */
-  keyDeliverables?: string;
-  /** Technical specification summary. */
-  technicalSpecifications?: string;
-}
-
-export interface TenderCreate {
-  title: string;
-  description: string;
-  location: string;
-  closingDate: string;
-  contactInfo: string;
-  serviceId: number;
-  questionDeadline: string;
-  /** If omitted, defaults to false at creation time. */
-  isFree?: boolean;
-  categoryId?: number;
-  referenceNumber?: string;
+  referenceNumber: string;
   noticeNumber?: string;
   productCategory?: string;
   tenderType?: string;
@@ -89,31 +43,18 @@ export interface TenderCreate {
   technicalSpecifications?: string;
 }
 
-export interface TenderUpdate {
-  title: string;
-  description: string;
-  location: string;
-  closingDate: string;
-  contactInfo: string;
-  questionDeadline: string;
-  /** Allow updating free status; optional to avoid forcing updates. */
-  isFree?: boolean;
-  serviceId?: number;
+export interface Tender extends TenderCore {
+  id: number;
+  datePosted?: string;
+  documentPath?: string;
+  // Legacy fields kept optional while backend migration finalises.
+  questionDeadline?: string;
   categoryId?: number;
-  referenceNumber?: string;
-  noticeNumber?: string;
-  productCategory?: string;
-  tenderType?: string;
-  procurementMethod?: string;
-  costOfTenderDocument?: string;
-  bidValidity?: string;
-  bidSecurity?: string;
-  contractPeriod?: string;
-  performanceSecurity?: string;
-  paymentTerms?: string;
-  keyDeliverables?: string;
-  technicalSpecifications?: string;
 }
+
+export type TenderCreate = TenderCore;
+
+export type TenderUpdate = TenderCore;
 
 // Statistics Types
 export interface AgencyStatistics {

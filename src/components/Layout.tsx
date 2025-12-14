@@ -12,7 +12,6 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
-  Avatar,
   Menu,
   MenuItem,
   useTheme,
@@ -128,10 +127,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <Typography variant="h6" noWrap component="div" color="primary" sx={{ flexGrow: 1 }}>
             {agency?.companyName || 'Tender Agency Dashboard'}
           </Typography>
-          <IconButton onClick={handleMenuOpen}>
-            <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
-              {agency?.companyName?.[0] || 'U'}
-            </Avatar>
+          <IconButton onClick={handleMenuOpen} color="primary">
+            <User size={24} />
           </IconButton>
           <Menu
             anchorEl={anchorEl}
