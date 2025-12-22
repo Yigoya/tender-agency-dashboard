@@ -78,6 +78,8 @@ type OptionalTenderField =
   | 'validityPeriodOfBids'
   | 'governingLaw';
 
+const TENDER_DRAFT_STORAGE_KEY = 'tender-create-draft';
+
 const optionalText = () =>
   yup
     .string()
@@ -450,11 +452,25 @@ export default function Tenders() {
         setFile(null);
         setOpenDialog(false);
         setSelectedTenderId(null);
+        setIsDialogExpanded(false);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem(TENDER_DRAFT_STORAGE_KEY);
+        }
       } catch (submitError) {
         toast.error(selectedTenderId ? 'Failed to update tender' : 'Failed to create tender');
       }
     },
   });
+
+  useEffect(() => {
+    if (!openDialog || selectedTenderId) return;
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(TENDER_DRAFT_STORAGE_KEY, JSON.stringify(formik.values));
+    } catch (persistError) {
+      console.warn('Failed to persist tender draft', persistError);
+    }
+  }, [formik.values, openDialog, selectedTenderId]);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -470,13 +486,27 @@ export default function Tenders() {
       const tenderToEdit = tenders.find((t) => t.id === tenderId);
       if (tenderToEdit) {
         formik.setValues(mapTenderToForm(tenderToEdit), true);
+        formik.setTouched({}, false);
         setSelectedTenderId(tenderId);
         setFile(null);
       }
     } else {
-      formik.resetForm({ values: defaultFormValues });
+      try {
+        const storedDraft = typeof window !== 'undefined' ? localStorage.getItem(TENDER_DRAFT_STORAGE_KEY) : null;
+        if (storedDraft) {
+          const parsedDraft = JSON.parse(storedDraft) as TenderFormValues;
+          formik.setValues({ ...defaultFormValues, ...parsedDraft }, false);
+          formik.setTouched({}, false);
+        } else {
+          formik.setValues(defaultFormValues, false);
+          formik.setTouched({}, false);
+        }
+      } catch (draftError) {
+        console.warn('Failed to load tender draft', draftError);
+        formik.setValues(defaultFormValues, false);
+        formik.setTouched({}, false);
+      }
       setSelectedTenderId(null);
-      setFile(null);
     }
     setIsDialogExpanded(false);
     setOpenDialog(true);
@@ -485,8 +515,6 @@ export default function Tenders() {
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedTenderId(null);
-    formik.resetForm({ values: defaultFormValues });
-    setFile(null);
     setIsDialogExpanded(false);
   };
 
@@ -634,7 +662,13 @@ export default function Tenders() {
         </CardContent>
       </Card>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth={isDialogExpanded ? 'xl' : 'md'} fullWidth>
+      <Dialog
+        open={openDialog}
+        onClose={handleCloseDialog}
+        maxWidth={isDialogExpanded ? 'xl' : 'md'}
+        fullWidth
+        keepMounted
+      >
         <form onSubmit={formik.handleSubmit}>
           <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
             <Typography variant="h6">{selectedTenderId ? 'Edit Tender' : 'Create New Tender'}</Typography>
@@ -1317,7 +1351,7 @@ export default function Tenders() {
             <Button
               variant="contained"
               type="submit"
-              disabled={formik.isSubmitting || !formik.isValid}
+              disabled={formik.isSubmitting}
             >
               {selectedTenderId ? 'Update' : 'Create'}
             </Button>
