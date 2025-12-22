@@ -32,7 +32,7 @@ import { useFormik } from 'formik';
 import * as yup from 'yup';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
-import { Plus, Edit2, Trash2, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Plus, Edit2, Trash2, AlertCircle, CheckCircle, XCircle, Maximize2, Minimize2, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchTenders } from '../store/slices/tenderSlice';
 import { adminApi, tenderApi } from '../services/api';
@@ -50,7 +50,33 @@ type OptionalTenderField =
   | 'performanceSecurity'
   | 'paymentTerms'
   | 'keyDeliverables'
-  | 'technicalSpecifications';
+  | 'technicalSpecifications'
+  | 'questionDeadline'
+  | 'tenderReferenceNoticeNo'
+  | 'publishedOn'
+  | 'bidSubmissionDeadline'
+  | 'tenderNoticeCode'
+  | 'warranty'
+  | 'generalEligibility'
+  | 'technicalRequirements'
+  | 'financialRequirements'
+  | 'experience'
+  | 'preBidMeeting'
+  | 'siteVisit'
+  | 'deadlineForClarifications'
+  | 'bidOpeningDate'
+  | 'tenderDocumentCollectionLocation'
+  | 'tenderDocumentCollectionTime'
+  | 'tenderDocumentDownload'
+  | 'bidSubmissionMode'
+  | 'bidSubmissionAddress'
+  | 'organization'
+  | 'department'
+  | 'address'
+  | 'tenderLocation'
+  | 'languageOfBids'
+  | 'validityPeriodOfBids'
+  | 'governingLaw';
 
 const optionalText = () =>
   yup
@@ -81,6 +107,32 @@ const validationSchema = yup.object({
   paymentTerms: optionalText(),
   keyDeliverables: optionalText(),
   technicalSpecifications: optionalText(),
+  questionDeadline: optionalText(),
+  tenderReferenceNoticeNo: optionalText(),
+  publishedOn: optionalText(),
+  bidSubmissionDeadline: optionalText(),
+  tenderNoticeCode: optionalText(),
+  warranty: optionalText(),
+  generalEligibility: optionalText(),
+  technicalRequirements: optionalText(),
+  financialRequirements: optionalText(),
+  experience: optionalText(),
+  preBidMeeting: optionalText(),
+  siteVisit: optionalText(),
+  deadlineForClarifications: optionalText(),
+  bidOpeningDate: optionalText(),
+  tenderDocumentCollectionLocation: optionalText(),
+  tenderDocumentCollectionTime: optionalText(),
+  tenderDocumentDownload: optionalText(),
+  bidSubmissionMode: optionalText(),
+  bidSubmissionAddress: optionalText(),
+  organization: optionalText(),
+  department: optionalText(),
+  address: optionalText(),
+  tenderLocation: optionalText(),
+  languageOfBids: optionalText(),
+  validityPeriodOfBids: optionalText(),
+  governingLaw: optionalText(),
 });
 
 type TenderFormValues = yup.InferType<typeof validationSchema>;
@@ -107,6 +159,32 @@ const defaultFormValues: TenderFormValues = {
   paymentTerms: '',
   keyDeliverables: '',
   technicalSpecifications: '',
+  questionDeadline: '',
+  tenderReferenceNoticeNo: '',
+  publishedOn: '',
+  bidSubmissionDeadline: '',
+  tenderNoticeCode: '',
+  warranty: '',
+  generalEligibility: '',
+  technicalRequirements: '',
+  financialRequirements: '',
+  experience: '',
+  preBidMeeting: '',
+  siteVisit: '',
+  deadlineForClarifications: '',
+  bidOpeningDate: '',
+  tenderDocumentCollectionLocation: '',
+  tenderDocumentCollectionTime: '',
+  tenderDocumentDownload: '',
+  bidSubmissionMode: '',
+  bidSubmissionAddress: '',
+  organization: '',
+  department: '',
+  address: '',
+  tenderLocation: '',
+  languageOfBids: '',
+  validityPeriodOfBids: '',
+  governingLaw: '',
 };
 
 const statusColors = {
@@ -153,6 +231,32 @@ const mapTenderToForm = (tender: Tender): TenderFormValues => ({
   paymentTerms: tender.paymentTerms ?? '',
   keyDeliverables: tender.keyDeliverables ?? '',
   technicalSpecifications: tender.technicalSpecifications ?? '',
+  questionDeadline: normaliseDateTimeInput(tender.questionDeadline),
+  tenderReferenceNoticeNo: tender.tenderReferenceNoticeNo ?? '',
+  publishedOn: normaliseDateTimeInput(tender.publishedOn),
+  bidSubmissionDeadline: normaliseDateTimeInput(tender.bidSubmissionDeadline),
+  tenderNoticeCode: tender.tenderNoticeCode ?? '',
+  warranty: tender.warranty ?? '',
+  generalEligibility: tender.generalEligibility ?? '',
+  technicalRequirements: tender.technicalRequirements ?? '',
+  financialRequirements: tender.financialRequirements ?? '',
+  experience: tender.experience ?? '',
+  preBidMeeting: normaliseDateTimeInput(tender.preBidMeeting),
+  siteVisit: tender.siteVisit ?? '',
+  deadlineForClarifications: normaliseDateTimeInput(tender.deadlineForClarifications),
+  bidOpeningDate: normaliseDateTimeInput(tender.bidOpeningDate),
+  tenderDocumentCollectionLocation: tender.tenderDocumentCollectionLocation ?? '',
+  tenderDocumentCollectionTime: tender.tenderDocumentCollectionTime ?? '',
+  tenderDocumentDownload: tender.tenderDocumentDownload ?? '',
+  bidSubmissionMode: tender.bidSubmissionMode ?? '',
+  bidSubmissionAddress: tender.bidSubmissionAddress ?? '',
+  organization: tender.organization ?? '',
+  department: tender.department ?? '',
+  address: tender.address ?? '',
+  tenderLocation: tender.tenderLocation ?? '',
+  languageOfBids: tender.languageOfBids ?? '',
+  validityPeriodOfBids: tender.validityPeriodOfBids ?? '',
+  governingLaw: tender.governingLaw ?? '',
 });
 
 const buildPayload = (values: TenderFormValues): TenderCreate => {
@@ -181,12 +285,48 @@ const buildPayload = (values: TenderFormValues): TenderCreate => {
     ['paymentTerms', values.paymentTerms],
     ['keyDeliverables', values.keyDeliverables],
     ['technicalSpecifications', values.technicalSpecifications],
+    ['questionDeadline', values.questionDeadline],
+    ['tenderReferenceNoticeNo', values.tenderReferenceNoticeNo],
+    ['publishedOn', values.publishedOn],
+    ['bidSubmissionDeadline', values.bidSubmissionDeadline],
+    ['tenderNoticeCode', values.tenderNoticeCode],
+    ['warranty', values.warranty],
+    ['generalEligibility', values.generalEligibility],
+    ['technicalRequirements', values.technicalRequirements],
+    ['financialRequirements', values.financialRequirements],
+    ['experience', values.experience],
+    ['preBidMeeting', values.preBidMeeting],
+    ['siteVisit', values.siteVisit],
+    ['deadlineForClarifications', values.deadlineForClarifications],
+    ['bidOpeningDate', values.bidOpeningDate],
+    ['tenderDocumentCollectionLocation', values.tenderDocumentCollectionLocation],
+    ['tenderDocumentCollectionTime', values.tenderDocumentCollectionTime],
+    ['tenderDocumentDownload', values.tenderDocumentDownload],
+    ['bidSubmissionMode', values.bidSubmissionMode],
+    ['bidSubmissionAddress', values.bidSubmissionAddress],
+    ['organization', values.organization],
+    ['department', values.department],
+    ['address', values.address],
+    ['tenderLocation', values.tenderLocation],
+    ['languageOfBids', values.languageOfBids],
+    ['validityPeriodOfBids', values.validityPeriodOfBids],
+    ['governingLaw', values.governingLaw],
+  ];
+
+  const dateTimeFields: OptionalTenderField[] = [
+    'questionDeadline',
+    'publishedOn',
+    'bidSubmissionDeadline',
+    'preBidMeeting',
+    'deadlineForClarifications',
+    'bidOpeningDate',
   ];
 
   optionalAssignments.forEach(([key, value]) => {
     const trimmed = value?.trim();
     if (trimmed) {
-      payload[key] = trimmed;
+      const normalised = dateTimeFields.includes(key) ? ensureSecondsPrecision(trimmed) : trimmed;
+      (payload as Record<string, string>)[key] = normalised;
     }
   });
 
@@ -210,6 +350,7 @@ export default function Tenders() {
   const [servicesLoading, setServicesLoading] = useState(false);
   const [serviceTree, setServiceTree] = useState<ServiceNode[]>([]);
   const [file, setFile] = useState<File | null>(null);
+  const [isDialogExpanded, setIsDialogExpanded] = useState(false);
 
   useEffect(() => {
     const agencyId = 1;
@@ -337,6 +478,7 @@ export default function Tenders() {
       setSelectedTenderId(null);
       setFile(null);
     }
+    setIsDialogExpanded(false);
     setOpenDialog(true);
   };
 
@@ -345,6 +487,7 @@ export default function Tenders() {
     setSelectedTenderId(null);
     formik.resetForm({ values: defaultFormValues });
     setFile(null);
+    setIsDialogExpanded(false);
   };
 
   const handleDeleteClick = (tenderId: number) => {
@@ -491,10 +634,22 @@ export default function Tenders() {
         </CardContent>
       </Card>
 
-      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth={isDialogExpanded ? 'xl' : 'md'} fullWidth>
         <form onSubmit={formik.handleSubmit}>
-          <DialogTitle>
-            {selectedTenderId ? 'Edit Tender' : 'Create New Tender'}
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
+            <Typography variant="h6">{selectedTenderId ? 'Edit Tender' : 'Create New Tender'}</Typography>
+            <Box display="flex" alignItems="center" gap={1}>
+              <IconButton
+                size="small"
+                onClick={() => setIsDialogExpanded((prev) => !prev)}
+                aria-label={isDialogExpanded ? 'Restore dialog size' : 'Expand dialog'}
+              >
+                {isDialogExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+              </IconButton>
+              <IconButton size="small" onClick={handleCloseDialog} aria-label="Close dialog">
+                <X size={18} />
+              </IconButton>
+            </Box>
           </DialogTitle>
           <DialogContent>
             <Grid container spacing={3} sx={{ mt: 1 }}>
@@ -642,6 +797,94 @@ export default function Tenders() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
+                  type="datetime-local"
+                  name="questionDeadline"
+                  label="Question Deadline"
+                  InputLabelProps={{ shrink: true }}
+                  value={formik.values.questionDeadline}
+                  onChange={formik.handleChange}
+                  error={formik.touched.questionDeadline && Boolean(formik.errors.questionDeadline)}
+                  helperText={formik.touched.questionDeadline && formik.errors.questionDeadline}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  type="datetime-local"
+                  name="publishedOn"
+                  label="Published On"
+                  InputLabelProps={{ shrink: true }}
+                  value={formik.values.publishedOn}
+                  onChange={formik.handleChange}
+                  error={formik.touched.publishedOn && Boolean(formik.errors.publishedOn)}
+                  helperText={formik.touched.publishedOn && formik.errors.publishedOn}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  type="datetime-local"
+                  name="bidSubmissionDeadline"
+                  label="Bid Submission Deadline"
+                  InputLabelProps={{ shrink: true }}
+                  value={formik.values.bidSubmissionDeadline}
+                  onChange={formik.handleChange}
+                  error={
+                    formik.touched.bidSubmissionDeadline && Boolean(formik.errors.bidSubmissionDeadline)
+                  }
+                  helperText={
+                    formik.touched.bidSubmissionDeadline && formik.errors.bidSubmissionDeadline
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  type="datetime-local"
+                  name="bidOpeningDate"
+                  label="Bid Opening Date"
+                  InputLabelProps={{ shrink: true }}
+                  value={formik.values.bidOpeningDate}
+                  onChange={formik.handleChange}
+                  error={formik.touched.bidOpeningDate && Boolean(formik.errors.bidOpeningDate)}
+                  helperText={formik.touched.bidOpeningDate && formik.errors.bidOpeningDate}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  type="datetime-local"
+                  name="preBidMeeting"
+                  label="Pre-Bid Meeting"
+                  InputLabelProps={{ shrink: true }}
+                  value={formik.values.preBidMeeting}
+                  onChange={formik.handleChange}
+                  error={formik.touched.preBidMeeting && Boolean(formik.errors.preBidMeeting)}
+                  helperText={formik.touched.preBidMeeting && formik.errors.preBidMeeting}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  type="datetime-local"
+                  name="deadlineForClarifications"
+                  label="Deadline for Clarifications"
+                  InputLabelProps={{ shrink: true }}
+                  value={formik.values.deadlineForClarifications}
+                  onChange={formik.handleChange}
+                  error={
+                    formik.touched.deadlineForClarifications &&
+                    Boolean(formik.errors.deadlineForClarifications)
+                  }
+                  helperText={
+                    formik.touched.deadlineForClarifications &&
+                    formik.errors.deadlineForClarifications
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
                   name="referenceNumber"
                   label="Reference Number"
                   required
@@ -660,6 +903,34 @@ export default function Tenders() {
                   onChange={formik.handleChange}
                   error={formik.touched.noticeNumber && Boolean(formik.errors.noticeNumber)}
                   helperText={formik.touched.noticeNumber && formik.errors.noticeNumber}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="tenderReferenceNoticeNo"
+                  label="Tender Reference Notice No."
+                  value={formik.values.tenderReferenceNoticeNo}
+                  onChange={formik.handleChange}
+                  error={
+                    formik.touched.tenderReferenceNoticeNo &&
+                    Boolean(formik.errors.tenderReferenceNoticeNo)
+                  }
+                  helperText={
+                    formik.touched.tenderReferenceNoticeNo &&
+                    formik.errors.tenderReferenceNoticeNo
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="tenderNoticeCode"
+                  label="Tender Notice Code"
+                  value={formik.values.tenderNoticeCode}
+                  onChange={formik.handleChange}
+                  error={formik.touched.tenderNoticeCode && Boolean(formik.errors.tenderNoticeCode)}
+                  helperText={formik.touched.tenderNoticeCode && formik.errors.tenderNoticeCode}
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -759,6 +1030,256 @@ export default function Tenders() {
                   onChange={formik.handleChange}
                   error={formik.touched.paymentTerms && Boolean(formik.errors.paymentTerms)}
                   helperText={formik.touched.paymentTerms && formik.errors.paymentTerms}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle1">Submission Logistics</Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="tenderDocumentCollectionLocation"
+                  label="Document Collection Location"
+                  value={formik.values.tenderDocumentCollectionLocation}
+                  onChange={formik.handleChange}
+                  error={
+                    formik.touched.tenderDocumentCollectionLocation &&
+                    Boolean(formik.errors.tenderDocumentCollectionLocation)
+                  }
+                  helperText={
+                    formik.touched.tenderDocumentCollectionLocation &&
+                    formik.errors.tenderDocumentCollectionLocation
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="tenderDocumentCollectionTime"
+                  label="Document Collection Time"
+                  value={formik.values.tenderDocumentCollectionTime}
+                  onChange={formik.handleChange}
+                  error={
+                    formik.touched.tenderDocumentCollectionTime &&
+                    Boolean(formik.errors.tenderDocumentCollectionTime)
+                  }
+                  helperText={
+                    formik.touched.tenderDocumentCollectionTime &&
+                    formik.errors.tenderDocumentCollectionTime
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  type="url"
+                  name="tenderDocumentDownload"
+                  label="Document Download Link"
+                  value={formik.values.tenderDocumentDownload}
+                  onChange={formik.handleChange}
+                  error={
+                    formik.touched.tenderDocumentDownload &&
+                    Boolean(formik.errors.tenderDocumentDownload)
+                  }
+                  helperText={
+                    formik.touched.tenderDocumentDownload &&
+                    formik.errors.tenderDocumentDownload
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="bidSubmissionMode"
+                  label="Bid Submission Mode"
+                  value={formik.values.bidSubmissionMode}
+                  onChange={formik.handleChange}
+                  error={formik.touched.bidSubmissionMode && Boolean(formik.errors.bidSubmissionMode)}
+                  helperText={formik.touched.bidSubmissionMode && formik.errors.bidSubmissionMode}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="bidSubmissionAddress"
+                  label="Bid Submission Address"
+                  multiline
+                  minRows={2}
+                  value={formik.values.bidSubmissionAddress}
+                  onChange={formik.handleChange}
+                  error={formik.touched.bidSubmissionAddress && Boolean(formik.errors.bidSubmissionAddress)}
+                  helperText={formik.touched.bidSubmissionAddress && formik.errors.bidSubmissionAddress}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="siteVisit"
+                  label="Site Visit Details"
+                  multiline
+                  minRows={2}
+                  value={formik.values.siteVisit}
+                  onChange={formik.handleChange}
+                  error={formik.touched.siteVisit && Boolean(formik.errors.siteVisit)}
+                  helperText={formik.touched.siteVisit && formik.errors.siteVisit}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle1">Eligibility & Requirements</Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="generalEligibility"
+                  label="General Eligibility"
+                  multiline
+                  minRows={2}
+                  value={formik.values.generalEligibility}
+                  onChange={formik.handleChange}
+                  error={formik.touched.generalEligibility && Boolean(formik.errors.generalEligibility)}
+                  helperText={formik.touched.generalEligibility && formik.errors.generalEligibility}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="technicalRequirements"
+                  label="Technical Requirements"
+                  multiline
+                  minRows={2}
+                  value={formik.values.technicalRequirements}
+                  onChange={formik.handleChange}
+                  error={formik.touched.technicalRequirements && Boolean(formik.errors.technicalRequirements)}
+                  helperText={
+                    formik.touched.technicalRequirements && formik.errors.technicalRequirements
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="financialRequirements"
+                  label="Financial Requirements"
+                  multiline
+                  minRows={2}
+                  value={formik.values.financialRequirements}
+                  onChange={formik.handleChange}
+                  error={
+                    formik.touched.financialRequirements && Boolean(formik.errors.financialRequirements)
+                  }
+                  helperText={
+                    formik.touched.financialRequirements && formik.errors.financialRequirements
+                  }
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="experience"
+                  label="Experience Requirements"
+                  multiline
+                  minRows={2}
+                  value={formik.values.experience}
+                  onChange={formik.handleChange}
+                  error={formik.touched.experience && Boolean(formik.errors.experience)}
+                  helperText={formik.touched.experience && formik.errors.experience}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="warranty"
+                  label="Warranty"
+                  multiline
+                  minRows={2}
+                  value={formik.values.warranty}
+                  onChange={formik.handleChange}
+                  error={formik.touched.warranty && Boolean(formik.errors.warranty)}
+                  helperText={formik.touched.warranty && formik.errors.warranty}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle1">Organisation Details</Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="organization"
+                  label="Organization"
+                  value={formik.values.organization}
+                  onChange={formik.handleChange}
+                  error={formik.touched.organization && Boolean(formik.errors.organization)}
+                  helperText={formik.touched.organization && formik.errors.organization}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="department"
+                  label="Department"
+                  value={formik.values.department}
+                  onChange={formik.handleChange}
+                  error={formik.touched.department && Boolean(formik.errors.department)}
+                  helperText={formik.touched.department && formik.errors.department}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="address"
+                  label="Address"
+                  value={formik.values.address}
+                  onChange={formik.handleChange}
+                  error={formik.touched.address && Boolean(formik.errors.address)}
+                  helperText={formik.touched.address && formik.errors.address}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="tenderLocation"
+                  label="Tender Location"
+                  value={formik.values.tenderLocation}
+                  onChange={formik.handleChange}
+                  error={formik.touched.tenderLocation && Boolean(formik.errors.tenderLocation)}
+                  helperText={formik.touched.tenderLocation && formik.errors.tenderLocation}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="languageOfBids"
+                  label="Language of Bids"
+                  value={formik.values.languageOfBids}
+                  onChange={formik.handleChange}
+                  error={formik.touched.languageOfBids && Boolean(formik.errors.languageOfBids)}
+                  helperText={formik.touched.languageOfBids && formik.errors.languageOfBids}
+                />
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <TextField
+                  fullWidth
+                  name="validityPeriodOfBids"
+                  label="Validity Period of Bids"
+                  value={formik.values.validityPeriodOfBids}
+                  onChange={formik.handleChange}
+                  error={
+                    formik.touched.validityPeriodOfBids && Boolean(formik.errors.validityPeriodOfBids)
+                  }
+                  helperText={
+                    formik.touched.validityPeriodOfBids && formik.errors.validityPeriodOfBids
+                  }
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  name="governingLaw"
+                  label="Governing Law"
+                  value={formik.values.governingLaw}
+                  onChange={formik.handleChange}
+                  error={formik.touched.governingLaw && Boolean(formik.errors.governingLaw)}
+                  helperText={formik.touched.governingLaw && formik.errors.governingLaw}
                 />
               </Grid>
               <Grid item xs={12}>

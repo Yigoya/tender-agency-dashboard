@@ -41,6 +41,32 @@ interface TenderCore {
   paymentTerms?: string;
   keyDeliverables?: string;
   technicalSpecifications?: string;
+  questionDeadline?: string;
+  tenderReferenceNoticeNo?: string;
+  publishedOn?: string;
+  bidSubmissionDeadline?: string;
+  tenderNoticeCode?: string;
+  warranty?: string;
+  generalEligibility?: string;
+  technicalRequirements?: string;
+  financialRequirements?: string;
+  experience?: string;
+  preBidMeeting?: string;
+  siteVisit?: string;
+  deadlineForClarifications?: string;
+  bidOpeningDate?: string;
+  tenderDocumentCollectionLocation?: string;
+  tenderDocumentCollectionTime?: string;
+  tenderDocumentDownload?: string;
+  bidSubmissionMode?: string;
+  bidSubmissionAddress?: string;
+  organization?: string;
+  department?: string;
+  address?: string;
+  tenderLocation?: string;
+  languageOfBids?: string;
+  validityPeriodOfBids?: string;
+  governingLaw?: string;
 }
 
 export interface Tender extends TenderCore {
