@@ -147,6 +147,12 @@ export default function TenderDetails() {
     if (Number.isNaN(parsed.valueOf())) return '-';
     return format(parsed, 'MMM d, yyyy');
   };
+  const safeFormatDateTime = (value?: string) => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.valueOf())) return value;
+    return format(parsed, 'MMM d, yyyy p');
+  };
   const tenderService = typeof tender.serviceId === 'number' ? serviceLookup.get(tender.serviceId) : undefined;
 
   return (
@@ -251,6 +257,18 @@ export default function TenderDetails() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
+                      Tender Reference Notice No.
+                    </Typography>
+                    <Typography variant="body1">{tender.tenderReferenceNoticeNo || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Tender Notice Code
+                    </Typography>
+                    <Typography variant="body1">{tender.tenderNoticeCode || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
                       Product Category
                     </Typography>
                     <Typography variant="body1">{tender.productCategory || '-'}</Typography>
@@ -344,6 +362,203 @@ export default function TenderDetails() {
                 <Typography variant="body1">
                   {tender.technicalSpecifications || 'Not provided.'}
                 </Typography>
+              </Box>
+
+              <Box mt={4}>
+                <Typography variant="h6" gutterBottom>
+                  Timeline
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Published On
+                    </Typography>
+                    <Typography variant="body1">{safeFormatDateTime(tender.publishedOn)}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Question Deadline
+                    </Typography>
+                    <Typography variant="body1">{safeFormatDateTime(tender.questionDeadline)}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Deadline for Clarifications
+                    </Typography>
+                    <Typography variant="body1">
+                      {safeFormatDateTime(tender.deadlineForClarifications)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Pre-Bid Meeting
+                    </Typography>
+                    <Typography variant="body1">{safeFormatDateTime(tender.preBidMeeting)}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Bid Submission Deadline
+                    </Typography>
+                    <Typography variant="body1">
+                      {safeFormatDateTime(tender.bidSubmissionDeadline)}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Bid Opening Date
+                    </Typography>
+                    <Typography variant="body1">{safeFormatDateTime(tender.bidOpeningDate)}</Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Box mt={4}>
+                <Typography variant="h6" gutterBottom>
+                  Submission Logistics
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Document Collection Location
+                    </Typography>
+                    <Typography variant="body1">
+                      {tender.tenderDocumentCollectionLocation || '-'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Document Collection Time
+                    </Typography>
+                    <Typography variant="body1">
+                      {tender.tenderDocumentCollectionTime || '-'}
+                    </Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      Document Download
+                    </Typography>
+                    {tender.tenderDocumentDownload ? (
+                      <Typography
+                        variant="body1"
+                        component="a"
+                        href={tender.tenderDocumentDownload}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        sx={{ wordBreak: 'break-all' }}
+                      >
+                        {tender.tenderDocumentDownload}
+                      </Typography>
+                    ) : (
+                      <Typography variant="body1">-</Typography>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Bid Submission Mode
+                    </Typography>
+                    <Typography variant="body1">{tender.bidSubmissionMode || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Site Visit
+                    </Typography>
+                    <Typography variant="body1">{tender.siteVisit || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      Bid Submission Address
+                    </Typography>
+                    <Typography variant="body1">{tender.bidSubmissionAddress || '-'}</Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Box mt={4}>
+                <Typography variant="h6" gutterBottom>
+                  Eligibility & Requirements
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      General Eligibility
+                    </Typography>
+                    <Typography variant="body1">{tender.generalEligibility || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Technical Requirements
+                    </Typography>
+                    <Typography variant="body1">{tender.technicalRequirements || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Financial Requirements
+                    </Typography>
+                    <Typography variant="body1">{tender.financialRequirements || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Experience
+                    </Typography>
+                    <Typography variant="body1">{tender.experience || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      Warranty
+                    </Typography>
+                    <Typography variant="body1">{tender.warranty || '-'}</Typography>
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Box mt={4}>
+                <Typography variant="h6" gutterBottom>
+                  Organisation & Governance
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Organization
+                    </Typography>
+                    <Typography variant="body1">{tender.organization || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Department
+                    </Typography>
+                    <Typography variant="body1">{tender.department || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Address
+                    </Typography>
+                    <Typography variant="body1">{tender.address || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Tender Location
+                    </Typography>
+                    <Typography variant="body1">{tender.tenderLocation || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Language of Bids
+                    </Typography>
+                    <Typography variant="body1">{tender.languageOfBids || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
+                      Validity Period of Bids
+                    </Typography>
+                    <Typography variant="body1">{tender.validityPeriodOfBids || '-'}</Typography>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      Governing Law
+                    </Typography>
+                    <Typography variant="body1">{tender.governingLaw || '-'}</Typography>
+                  </Grid>
+                </Grid>
               </Box>
             </CardContent>
           </Card>

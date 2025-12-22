@@ -74,7 +74,6 @@ export interface Tender extends TenderCore {
   datePosted?: string;
   documentPath?: string;
   // Legacy fields kept optional while backend migration finalises.
-  questionDeadline?: string;
   categoryId?: number;
 }
 
