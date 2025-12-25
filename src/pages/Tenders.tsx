@@ -26,6 +26,7 @@ import {
   TablePagination,
   TableRow,
   TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { useFormik } from 'formik';
@@ -80,6 +81,24 @@ type OptionalTenderField =
 
 const TENDER_DRAFT_STORAGE_KEY = 'tender-create-draft';
 
+const ETHIOPIAN_REGIONS = [
+  'Addis Ababa City Administration',
+  'Dire Dawa City Administration',
+  'Afar Region',
+  'Amhara Region',
+  'Benishangul-Gumuz Region',
+  'Central Ethiopia Region',
+  'Gambela Region',
+  'Harari Region',
+  'Oromia Region',
+  'Sidama Region',
+  'Somali Region',
+  'South Ethiopia Region',
+  'South West Ethiopia Peoples Region',
+  'Southern Nations, Nationalities and Peoples Region',
+  'Tigray Region',
+];
+
 const optionalText = () =>
   yup
     .string()
@@ -93,7 +112,7 @@ const validationSchema = yup.object({
   location: yup.string().required('Location is required'),
   closingDate: yup.string().required('Closing date is required'),
   contactInfo: yup.string().required('Contact information is required'),
-  serviceId: yup.number().positive('Select a service').required('Service is required'),
+  serviceId: yup.number().positive('Select a category').required('Category is required'),
   status: yup.mixed<'OPEN' | 'CLOSED' | 'CANCELLED'>().oneOf(['OPEN', 'CLOSED', 'CANCELLED']).required(),
   isFree: yup.boolean().required(),
   referenceNumber: yup.string().trim().required('Reference number is required'),
@@ -235,7 +254,7 @@ const mapTenderToForm = (tender: Tender): TenderFormValues => ({
   technicalSpecifications: tender.technicalSpecifications ?? '',
   questionDeadline: normaliseDateTimeInput(tender.questionDeadline),
   tenderReferenceNoticeNo: tender.tenderReferenceNoticeNo ?? '',
-  publishedOn: normaliseDateTimeInput(tender.publishedOn),
+  publishedOn: tender.publishedOn ?? '',
   bidSubmissionDeadline: normaliseDateTimeInput(tender.bidSubmissionDeadline),
   tenderNoticeCode: tender.tenderNoticeCode ?? '',
   warranty: tender.warranty ?? '',
@@ -317,7 +336,6 @@ const buildPayload = (values: TenderFormValues): TenderCreate => {
 
   const dateTimeFields: OptionalTenderField[] = [
     'questionDeadline',
-    'publishedOn',
     'bidSubmissionDeadline',
     'preBidMeeting',
     'deadlineForClarifications',
@@ -333,11 +351,6 @@ const buildPayload = (values: TenderFormValues): TenderCreate => {
   });
 
   return payload;
-};
-
-const truncateText = (value: string | undefined, maxLength = 80) => {
-  if (!value) return '-';
-  return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
 };
 
 export default function Tenders() {
@@ -366,7 +379,7 @@ export default function Tenders() {
         const { data } = await adminApi.getServices();
         const tenderCategory = data.find((category) => category.categoryId === 1);
         if (!tenderCategory) {
-          toast.error('Tender services not found');
+          toast.error('tender categories not found');
           setServiceTree([]);
           return;
         }
@@ -599,7 +612,24 @@ export default function Tenders() {
                       onClick={() => navigate(`/tenders/${tender.id}`)}
                     >
                       <TableCell>{tender.title || '-'}</TableCell>
-                      <TableCell>{truncateText(tender.description, 100)}</TableCell>
+                      <TableCell sx={{ maxWidth: 360 }}>
+                        <Tooltip title={tender.description || '-'} placement="top-start" arrow describeChild>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'normal',
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {tender.description || '-'}
+                          </Typography>
+                        </Tooltip>
+                      </TableCell>
                       <TableCell>{tender.location || '-'}</TableCell>
                       <TableCell>
                         {serviceOption?.breadcrumb ??
@@ -622,7 +652,24 @@ export default function Tenders() {
                           }}
                         />
                       </TableCell>
-                      <TableCell>{tender.referenceNumber || '-'}</TableCell>
+                      <TableCell sx={{ maxWidth: 260 }}>
+                        <Tooltip title={tender.referenceNumber || '-'} placement="top-start" arrow describeChild>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'normal',
+                              wordBreak: 'break-word',
+                            }}
+                          >
+                            {tender.referenceNumber || '-'}
+                          </Typography>
+                        </Tooltip>
+                      </TableCell>
                       <TableCell align="right">
                         <IconButton
                           size="small"
@@ -689,7 +736,7 @@ export default function Tenders() {
             <Grid container spacing={3} sx={{ mt: 1 }}>
               <Grid item xs={12}>
                 <Alert severity="info">
-                  Fields marked * are required. Please provide Title, Description, Location, Closing Date, Contact Info, Tender Service, Status, and Reference Number.
+                  Fields marked * are required. Please provide Title, Description, Location, Closing Date, Contact Info, tender category, Status, and Reference Number.
                 </Alert>
               </Grid>
               <Grid item xs={12}>
@@ -721,14 +768,30 @@ export default function Tenders() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
+                  select
                   name="location"
                   label="Location"
                   required
                   value={formik.values.location}
                   onChange={formik.handleChange}
                   error={formik.touched.location && Boolean(formik.errors.location)}
-                  helperText={formik.touched.location && formik.errors.location}
-                />
+                  helperText={
+                    (formik.touched.location && formik.errors.location) ||
+                    'Select the Ethiopian region where this tender applies'
+                  }
+                >
+                  <MenuItem value="" disabled>
+                    Select a region
+                  </MenuItem>
+                  {!ETHIOPIAN_REGIONS.includes(formik.values.location) && formik.values.location && (
+                    <MenuItem value={formik.values.location}>Current: {formik.values.location}</MenuItem>
+                  )}
+                  {ETHIOPIAN_REGIONS.map((region) => (
+                    <MenuItem key={region} value={region}>
+                      {region}
+                    </MenuItem>
+                  ))}
+                </TextField>
               </Grid>
               <Grid item xs={12} md={6}>
                 <TextField
@@ -761,7 +824,7 @@ export default function Tenders() {
                   fullWidth
                   select
                   name="serviceId"
-                  label="Tender Service"
+                  label="tender category"
                   required
                   value={formik.values.serviceId}
                   onChange={(event) => formik.setFieldValue('serviceId', Number(event.target.value))}
@@ -775,7 +838,7 @@ export default function Tenders() {
                   disabled={servicesLoading}
                 >
                   <MenuItem value={0} disabled>
-                    {servicesLoading ? 'Loading…' : 'Select a service'}
+                    {servicesLoading ? 'Loading…' : 'Select a category'}
                   </MenuItem>
                   {!servicesLoading &&
                     !serviceLookup.has(formik.values.serviceId) &&
@@ -844,14 +907,16 @@ export default function Tenders() {
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
-                  type="datetime-local"
                   name="publishedOn"
-                  label="Published On"
-                  InputLabelProps={{ shrink: true }}
+                  label="Publication Venue"
+                  placeholder="e.g., Addis Zemen Newspaper"
                   value={formik.values.publishedOn}
                   onChange={formik.handleChange}
                   error={formik.touched.publishedOn && Boolean(formik.errors.publishedOn)}
-                  helperText={formik.touched.publishedOn && formik.errors.publishedOn}
+                  helperText={
+                    (formik.touched.publishedOn && formik.errors.publishedOn) ||
+                    'Provide the venue or channel where this tender is published'
+                  }
                 />
               </Grid>
               <Grid item xs={12} md={6}>
@@ -928,7 +993,7 @@ export default function Tenders() {
                   helperText={formik.touched.referenceNumber && formik.errors.referenceNumber}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              {/* <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   name="noticeNumber"
@@ -938,8 +1003,8 @@ export default function Tenders() {
                   error={formik.touched.noticeNumber && Boolean(formik.errors.noticeNumber)}
                   helperText={formik.touched.noticeNumber && formik.errors.noticeNumber}
                 />
-              </Grid>
-              <Grid item xs={12} md={6}>
+              </Grid> */}
+              {/* <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   name="tenderReferenceNoticeNo"
@@ -955,7 +1020,7 @@ export default function Tenders() {
                     formik.errors.tenderReferenceNoticeNo
                   }
                 />
-              </Grid>
+              </Grid> */}
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -967,7 +1032,7 @@ export default function Tenders() {
                   helperText={formik.touched.tenderNoticeCode && formik.errors.tenderNoticeCode}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              {/* <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   name="productCategory"
@@ -977,7 +1042,7 @@ export default function Tenders() {
                   error={formik.touched.productCategory && Boolean(formik.errors.productCategory)}
                   helperText={formik.touched.productCategory && formik.errors.productCategory}
                 />
-              </Grid>
+              </Grid> */}
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
@@ -1268,7 +1333,7 @@ export default function Tenders() {
                   helperText={formik.touched.address && formik.errors.address}
                 />
               </Grid>
-              <Grid item xs={12} md={6}>
+              {/* <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth
                   name="tenderLocation"
@@ -1278,7 +1343,7 @@ export default function Tenders() {
                   error={formik.touched.tenderLocation && Boolean(formik.errors.tenderLocation)}
                   helperText={formik.touched.tenderLocation && formik.errors.tenderLocation}
                 />
-              </Grid>
+              </Grid> */}
               <Grid item xs={12} md={6}>
                 <TextField
                   fullWidth

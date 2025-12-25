@@ -249,18 +249,18 @@ export default function TenderDetails() {
                     </Typography>
                     <Typography variant="body1">{tender.referenceNumber || '-'}</Typography>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  {/* <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
                       Notice Number
                     </Typography>
                     <Typography variant="body1">{tender.noticeNumber || '-'}</Typography>
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
+                  </Grid> */}
+                  {/* <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
                       Tender Reference Notice No.
                     </Typography>
                     <Typography variant="body1">{tender.tenderReferenceNoticeNo || '-'}</Typography>
-                  </Grid>
+                  </Grid> */}
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
                       Tender Notice Code
@@ -269,10 +269,16 @@ export default function TenderDetails() {
                   </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
+                      Publication Venue
+                    </Typography>
+                    <Typography variant="body1">{tender.publishedOn || '-'}</Typography>
+                  </Grid>
+                  {/* <Grid item xs={12} sm={6}>
+                    <Typography variant="body2" color="text.secondary">
                       Product Category
                     </Typography>
                     <Typography variant="body1">{tender.productCategory || '-'}</Typography>
-                  </Grid>
+                  </Grid> */}
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
                       Tender Type
@@ -369,12 +375,6 @@ export default function TenderDetails() {
                   Timeline
                 </Typography>
                 <Grid container spacing={2}>
-                  <Grid item xs={12} sm={6}>
-                    <Typography variant="body2" color="text.secondary">
-                      Published On
-                    </Typography>
-                    <Typography variant="body1">{safeFormatDateTime(tender.publishedOn)}</Typography>
-                  </Grid>
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
                       Question Deadline
@@ -534,12 +534,12 @@ export default function TenderDetails() {
                     </Typography>
                     <Typography variant="body1">{tender.address || '-'}</Typography>
                   </Grid>
-                  <Grid item xs={12} sm={6}>
+                  {/* <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
                       Tender Location
                     </Typography>
                     <Typography variant="body1">{tender.tenderLocation || '-'}</Typography>
-                  </Grid>
+                  </Grid> */}
                   <Grid item xs={12} sm={6}>
                     <Typography variant="body2" color="text.secondary">
                       Language of Bids

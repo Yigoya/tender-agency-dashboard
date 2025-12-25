@@ -6,7 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { store } from './store/store';
 import theme from './theme';
 import AppRoutes from './routes';
-
+ 
 function App() {
   return (
     <Provider store={store}>
