@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -10,6 +10,7 @@ import {
   IconButton,
   Alert,
   Divider,
+  CircularProgress,
 } from '@mui/material';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useFormik } from 'formik';
@@ -31,52 +32,44 @@ const validationSchema = yup.object({
     .required('Password is required'),
 });
 
+// Hidden metadata constants (sent silently with login request)
+const HIDDEN_META = {
+  FCMToken: 'dKB-Qr1oRlKZmcpB5bM7Ng:APA91bEDkEgF_hC8y6NgIFWBQ-Tq6w5dSp3ALhleFaPRQ2MDV_cwmP-YVQU2NHZ5y38H76kZrXfhVBRuquK7JLK8XgViuhQvaSpb3UkalYLo-TzsvceQpvg',
+  deviceType: 'Samsung',
+  deviceModel: 'M12',
+  operatingSystem: 'ANDROID',
+} as const;
+
 export default function Login() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const [searchParams] = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // Hidden metadata constants (sent silently with login request)
-  const HIDDEN_META = {
-    FCMToken: 'dKB-Qr1oRlKZmcpB5bM7Ng:APA91bEDkEgF_hC8y6NgIFWBQ-Tq6w5dSp3ALhleFaPRQ2MDV_cwmP-YVQU2NHZ5y38H76kZrXfhVBRuquK7JLK8XgViuhQvaSpb3UkalYLo-TzsvceQpvg',
-    deviceType: 'Samsung',
-    deviceModel: 'M12',
-    operatingSystem: 'ANDROID',
-  } as const;
-
-  const formik = useFormik<LoginRequest>({
-    initialValues: {
-      email: '',
-      password: '',
-      ...HIDDEN_META,
-    },
-    validationSchema,
-    onSubmit: async (values) => {
+  const performLogin = useCallback(
+    async (email: string, password: string) => {
       try {
         setError(null);
-        // Merge visible credentials with hidden metadata constants
-        const response = await authApi.login({ ...values, ...HIDDEN_META });
+        setIsProcessing(true);
 
+        const response = await authApi.login({ email, password, ...HIDDEN_META });
         const { token, user } = response.data;
-        
-        // Store token and user info
+
         localStorage.setItem('token', token);
         localStorage.setItem('userId', user.id);
         dispatch(setAuth({ token, user }));
-        
-        // Get agency profile (axios client will include Authorization header via interceptor)
+
         const agencyResponse = await api.get(`/tender-agencies/user/${user.id}/profile`);
         localStorage.setItem('agencyProfile', JSON.stringify(agencyResponse.data));
-        
-        // If user is not verified, send to verify page
+
         const status = (user?.status || user?.verifiedStatus || '').toString().toUpperCase();
         const isVerified = status === 'VERIFIED' || status === 'ACTIVE' || status === 'APPROVED';
 
         if (!isVerified) {
-          // Keep the email used for resend
-          if (values.email) {
-            localStorage.setItem('pendingEmail', values.email);
+          if (email) {
+            localStorage.setItem('pendingEmail', email);
           }
           toast.info('Please verify your email to continue.');
           navigate('/verify-email');
@@ -93,9 +86,73 @@ export default function Login() {
         const fallbackMessage = detailMessage || 'Failed to login. Please try again.';
         setError(fallbackMessage);
         toast.error(fallbackMessage);
+      } finally {
+        setIsProcessing(false);
       }
     },
+    [dispatch, navigate]
+  );
+
+  const formik = useFormik<LoginRequest>({
+    initialValues: {
+      email: '',
+      password: '',
+      ...HIDDEN_META,
+    },
+    validationSchema,
+    onSubmit: async (values) => {
+      await performLogin(values.email, values.password);
+    },
   });
+
+  const autoEmail = searchParams.get('email');
+  const autoPassword = searchParams.get('password');
+  const shouldAutoLogin = Boolean(autoEmail && autoPassword);
+
+  useEffect(() => {
+    if (!shouldAutoLogin || !autoEmail || !autoPassword) return;
+    performLogin(autoEmail, autoPassword);
+  }, [autoEmail, autoPassword, performLogin, shouldAutoLogin]);
+
+  if (shouldAutoLogin) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(45deg, #2b78ac 30%, #2b78ac 90%)',
+          p: 3,
+        }}
+      >
+        <Card
+          sx={{
+            maxWidth: 380,
+            width: '100%',
+            p: 4,
+            boxShadow: '0 8px 40px -12px rgba(0,0,0,0.3)',
+            borderRadius: 3,
+            textAlign: 'center',
+          }}
+        >
+          {error ? (
+            <Alert severity="error">{error}</Alert>
+          ) : (
+            <>
+              <CircularProgress color="primary" sx={{ mb: 2 }} />
+              <Typography variant="h6" fontWeight={600} color="primary">
+                Signing you in…
+              </Typography>
+              <Typography variant="body2" color="text.secondary" mt={1}>
+                Please wait while we secure your session.
+              </Typography>
+            </>
+          )}
+        </Card>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -194,8 +251,9 @@ export default function Login() {
               fontSize: '1rem',
               py: 1.5,
             }}
+            disabled={isProcessing || formik.isSubmitting}
           >
-            Sign In
+            {isProcessing || formik.isSubmitting ? 'Signing In…' : 'Sign In'}
           </Button>
         </form>
 
