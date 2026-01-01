@@ -9,6 +9,7 @@ import Login from '../pages/auth/Login';
 import Register from '../pages/auth/Register';
 import VerifyEmailPending from '../pages/auth/VerifyEmailPending';
 import VerifyEmail from '../pages/auth/VerifyEmail';
+import TokenLogin from '../pages/auth/TokenLogin';
 import PrivateRoute from './PrivateRoute';
 
 export default function AppRoutes() {
@@ -17,6 +18,8 @@ export default function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-email" element={<VerifyEmailPending />} />
+      <Route path="/auth/token-login" element={<TokenLogin />} />
+      <Route path="/token-login" element={<TokenLogin />} />
       {/* Handler for verification link: https://<domain>/auth/verify?token=... */}
       <Route path="/auth/verify" element={<VerifyEmail />} />
       
