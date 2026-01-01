@@ -26,7 +26,8 @@ import {
   User,
   LogOut,
 } from 'lucide-react';
-import { useAppSelector } from '../store/store';
+import { useAppDispatch, useAppSelector } from '../store/store';
+import { clearAuth } from '../store/slices/authSlice';
 
 const drawerWidth = 240;
 
@@ -45,6 +46,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const dispatch = useAppDispatch();
   
   const agency = useAppSelector((state) => state.agency.profile);
 
@@ -61,9 +63,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   };
 
   const handleLogout = () => {
-    // Implement logout logic here
+    if (typeof window !== 'undefined') {
+      ['token', 'userId', 'agencyId', 'agencyProfile', 'pendingEmail'].forEach((key) => {
+        localStorage.removeItem(key);
+      });
+    }
+    dispatch(clearAuth());
     handleMenuClose();
-    navigate('/login');
+    setMobileOpen(false);
+    navigate('/login', { replace: true });
   };
 
   const drawer = (
