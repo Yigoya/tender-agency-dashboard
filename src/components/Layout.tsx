@@ -138,6 +138,14 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <IconButton onClick={handleMenuOpen} color="primary">
             <User size={24} />
           </IconButton>
+          <IconButton
+            onClick={handleLogout}
+            color="primary"
+            aria-label="Logout"
+            sx={{ ml: 1 }}
+          >
+            <LogOut size={24} />
+          </IconButton>
           <Menu
             anchorEl={anchorEl}
             open={Boolean(anchorEl)}

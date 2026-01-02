@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -33,6 +33,7 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchTenderById } from '../store/slices/tenderSlice';
 import { adminApi, tenderApi } from '../services/api';
 import type { ServiceNode } from '../types/api';
+import { getAgencyIdFromStorage } from '../utils/agency';
 
 const statusColors = {
   OPEN: '#2b78ac',
@@ -55,14 +56,19 @@ export default function TenderDetails() {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<'OPEN' | 'CLOSED' | 'CANCELLED'>('OPEN');
   const [serviceLookup, setServiceLookup] = useState<Map<number, string>>(new Map());
+  const agencyId = useMemo(() => getAgencyIdFromStorage(), []);
 
   useEffect(() => {
+    if (!agencyId) {
+      toast.error('Missing agency information. Please log in again.');
+      navigate('/login', { replace: true });
+      return;
+    }
+
     if (id) {
-      // In production, get the agencyId from auth context/state
-      const agencyId = 1;
       dispatch(fetchTenderById({ agencyId, tenderId: parseInt(id, 10) }));
     }
-  }, [dispatch, id]);
+  }, [agencyId, dispatch, id, navigate]);
 
   useEffect(() => {
     const flattenServices = (
@@ -95,10 +101,13 @@ export default function TenderDetails() {
     const file = event.target.files?.[0];
     if (!file || !id) return;
 
+    if (!agencyId) {
+      toast.error('Missing agency information. Please log in again.');
+      return;
+    }
+
     try {
       setUploadLoading(true);
-      // In production, get the agencyId from auth context/state
-      const agencyId = 1;
       await tenderApi.uploadDocument(agencyId, parseInt(id, 10), file);
       dispatch(fetchTenderById({ agencyId, tenderId: parseInt(id, 10) }));
       toast.success('Document uploaded successfully');
@@ -112,9 +121,12 @@ export default function TenderDetails() {
   const handleStatusChange = async () => {
     if (!id) return;
 
+    if (!agencyId) {
+      toast.error('Missing agency information. Please log in again.');
+      return;
+    }
+
     try {
-      // In production, get the agencyId from auth context/state
-      const agencyId = 1;
       await tenderApi.updateStatus(agencyId, parseInt(id, 10), newStatus);
       dispatch(fetchTenderById({ agencyId, tenderId: parseInt(id, 10) }));
       toast.success('Status updated successfully');

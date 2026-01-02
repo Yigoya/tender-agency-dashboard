@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Card,
@@ -18,6 +18,7 @@ import { Upload } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchProfile } from '../store/slices/agencySlice';
 import { agencyApi } from '../services/api';
+import { getAgencyIdFromStorage } from '../utils/agency';
 
 const validationSchema = yup.object({
   companyName: yup.string().required('Company name is required'),
@@ -29,12 +30,16 @@ export default function Profile() {
   const dispatch = useAppDispatch();
   const { profile, loading, error } = useAppSelector((state) => state.agency);
   const [uploadLoading, setUploadLoading] = useState(false);
+  const agencyId = useMemo(() => getAgencyIdFromStorage(), []);
 
   useEffect(() => {
-    // In production, get the agencyId from auth context/state
-    const agencyId = 1;
+    if (!agencyId) {
+      toast.error('Missing agency information. Please log in again.');
+      return;
+    }
+
     dispatch(fetchProfile(agencyId));
-  }, [dispatch]);
+  }, [dispatch, agencyId]);
 
   const formik = useFormik({
     initialValues: {
@@ -45,9 +50,12 @@ export default function Profile() {
     validationSchema,
     enableReinitialize: true,
     onSubmit: async (values) => {
+      if (!agencyId) {
+        toast.error('Missing agency information. Please log in again.');
+        return;
+      }
+
       try {
-        // In production, get the agencyId from auth context/state
-        const agencyId = 1;
         await agencyApi.updateProfile(agencyId, values);
         dispatch(fetchProfile(agencyId));
         toast.success('Profile updated successfully');
@@ -61,10 +69,13 @@ export default function Profile() {
     const file = event.target.files?.[0];
     if (!file) return;
 
+    if (!agencyId) {
+      toast.error('Missing agency information. Please log in again.');
+      return;
+    }
+
     try {
       setUploadLoading(true);
-      // In production, get the agencyId from auth context/state
-      const agencyId = 1;
       await agencyApi.uploadLicense(agencyId, file);
       dispatch(fetchProfile(agencyId));
       toast.success('License uploaded successfully');

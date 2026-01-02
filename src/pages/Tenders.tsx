@@ -38,6 +38,7 @@ import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchTenders } from '../store/slices/tenderSlice';
 import { adminApi, tenderApi } from '../services/api';
 import type { ServiceNode, Tender, TenderCreate } from '../types/api';
+import { getAgencyIdFromStorage } from '../utils/agency';
 
 type OptionalTenderField =
   | 'noticeNumber'
@@ -366,11 +367,20 @@ export default function Tenders() {
   const [serviceTree, setServiceTree] = useState<ServiceNode[]>([]);
   const [file, setFile] = useState<File | null>(null);
   const [isDialogExpanded, setIsDialogExpanded] = useState(false);
+  const agencyId = useMemo(() => getAgencyIdFromStorage(), []);
 
   useEffect(() => {
-    const agencyId = 1;
+    if (!agencyId) {
+      toast.error('Missing agency information. Please log in again.');
+      navigate('/login', { replace: true });
+    }
+  }, [agencyId, navigate]);
+
+  useEffect(() => {
+    if (!agencyId) return;
+
     dispatch(fetchTenders({ agencyId, page, size: rowsPerPage }));
-  }, [dispatch, page, rowsPerPage]);
+  }, [agencyId, dispatch, page, rowsPerPage]);
 
   useEffect(() => {
     const loadServices = async () => {
@@ -441,7 +451,10 @@ export default function Tenders() {
     validateOnMount: true,
     onSubmit: async (values, helpers) => {
       try {
-        const agencyId = 1;
+        if (!agencyId) {
+          toast.error('Missing agency information. Please log in again.');
+          return;
+        }
         const payload = buildPayload(values);
         if (selectedTenderId) {
           await tenderApi.update(agencyId, selectedTenderId, payload);
@@ -539,7 +552,10 @@ export default function Tenders() {
   const handleDeleteConfirm = async () => {
     if (!selectedTenderId) return;
     try {
-      const agencyId = 1;
+      if (!agencyId) {
+        toast.error('Missing agency information. Please log in again.');
+        return;
+      }
       await tenderApi.delete(agencyId, selectedTenderId);
       dispatch(fetchTenders({ agencyId, page, size: rowsPerPage }));
       toast.success('Tender deleted successfully');

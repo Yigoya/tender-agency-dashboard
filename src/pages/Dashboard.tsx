@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Grid,
@@ -27,9 +27,11 @@ import {
 } from 'chart.js';
 import { format } from 'date-fns';
 import { FileText, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchStatistics } from '../store/slices/agencySlice';
 import { fetchTenders } from '../store/slices/tenderSlice';
+import { getAgencyIdFromStorage } from '../utils/agency';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale);
 
@@ -50,13 +52,18 @@ export default function Dashboard() {
   const dispatch = useAppDispatch();
   const { statistics } = useAppSelector((state) => state.agency);
   const { tenders } = useAppSelector((state) => state.tender);
+  const agencyId = useMemo(() => getAgencyIdFromStorage(), []);
 
   useEffect(() => {
-    // In production, get the agencyId from auth context/state
-    const agencyId = 1;
+    if (!agencyId) {
+      toast.error('Missing agency information. Please log in again.');
+      navigate('/login', { replace: true });
+      return;
+    }
+
     dispatch(fetchStatistics(agencyId));
     dispatch(fetchTenders({ agencyId, page: 0, size: 5 }));
-  }, [dispatch]);
+  }, [agencyId, dispatch, navigate]);
 
   const chartData = {
     labels: ['Open', 'Closed', 'Cancelled'],

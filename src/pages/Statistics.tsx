@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Card,
@@ -20,8 +21,10 @@ import {
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { FileText, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from '../store/store';
 import { fetchStatistics } from '../store/slices/agencySlice';
+import { getAgencyIdFromStorage } from '../utils/agency';
 
 ChartJS.register(
   CategoryScale,
@@ -40,14 +43,20 @@ const statusColors = {
 };
 
 export default function Statistics() {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { statistics, loading, error } = useAppSelector((state) => state.agency);
+  const agencyId = useMemo(() => getAgencyIdFromStorage(), []);
 
   useEffect(() => {
-    // In production, get the agencyId from auth context/state
-    const agencyId = 1;
+    if (!agencyId) {
+      toast.error('Missing agency information. Please log in again.');
+      navigate('/login', { replace: true });
+      return;
+    }
+
     dispatch(fetchStatistics(agencyId));
-  }, [dispatch]);
+  }, [agencyId, dispatch, navigate]);
 
   const pieChartData = {
     labels: ['Open', 'Closed', 'Cancelled'],
